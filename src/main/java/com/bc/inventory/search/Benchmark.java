@@ -101,13 +101,13 @@ public class Benchmark {
         List<SimpleRecord> latLonTime = readInsituRecords(new File(baseDir, "insitu.csv"));
         List<SimpleRecord> latLon = readInsituRecords(new File(baseDir, "extracts.csv"));
 
-        Constrain c1 = new Constrain("northsea").widthPolygon(northseaPoly);
-        Constrain c2 = new Constrain("northsea, 1 year").widthPolygon(northseaPoly).widthStart("2005-01-01").witdthEnd("2006-01-01");
-        Constrain c3 = new Constrain("northsea, 1 week").widthPolygon(northseaPoly).widthStart("2005-06-01").witdthEnd("2005-06-07");
-        Constrain c4 = new Constrain("northsea, 1 day").widthPolygon(northseaPoly).widthStart("2005-06-01").witdthEnd("2005-06-02");
-        Constrain c5 = new Constrain("matchups 30k lat/lon/time").widthInsitu(latLonTime).widthDeltaTime(HOURS_IN_MILLIS * 3);
-        Constrain c6 = new Constrain("extracts 3 lat/lon").widthInsitu(latLon);
-        Constrain c7 = new Constrain("extracts 3 lat/lon, 1 year").widthInsitu(latLon).widthStart("2005-01-01").witdthEnd("2006-01-01");
+        Constrain c1 = new Constrain("northsea").withPolygon(northseaPoly);
+        Constrain c2 = new Constrain("northsea, 1 year").withPolygon(northseaPoly).withStart("2005-01-01").witthEnd("2006-01-01");
+        Constrain c3 = new Constrain("northsea, 1 week").withPolygon(northseaPoly).withStart("2005-06-01").witthEnd("2005-06-07");
+        Constrain c4 = new Constrain("northsea, 1 day").withPolygon(northseaPoly).withStart("2005-06-01").witthEnd("2005-06-02");
+        Constrain c5 = new Constrain("matchups 30k lat/lon/time").withInsitu(latLonTime).withDeltaTime(HOURS_IN_MILLIS * 3);
+        Constrain c6 = new Constrain("extracts 3 lat/lon").withInsitu(latLon);
+        Constrain c7 = new Constrain("extracts 3 lat/lon, 1 year").withInsitu(latLon).withStart("2005-01-01").witthEnd("2006-01-01");
         return Arrays.asList(c1, c2, c3, c4, c5, c6, c7);
     }
 

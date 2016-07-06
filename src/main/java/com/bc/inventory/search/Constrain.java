@@ -49,27 +49,27 @@ public class Constrain {
         return delta;
     }
 
-    public Constrain widthPolygon(S2Polygon polygon) {
+    public Constrain withPolygon(S2Polygon polygon) {
         this.polygon = polygon;
         return this;
     }
 
-    public Constrain widthStart(String start) {
+    public Constrain withStart(String start) {
         this.start = dateAsLong(start);
         return this;
     }
 
-    public Constrain witdthEnd(String end) {
+    public Constrain witthEnd(String end) {
         this.end = dateAsLong(end);
         return this;
     }
 
-    public Constrain widthInsitu(List<SimpleRecord> insitu) {
+    public Constrain withInsitu(List<SimpleRecord> insitu) {
         this.insitu = insitu;
         return this;
     }
 
-    public Constrain widthDeltaTime(long delta) {
+    public Constrain withDeltaTime(long delta) {
         this.delta = delta;
         return this;
     }

@@ -125,7 +125,7 @@ public class CoverageInventory implements Inventory {
             } else if (startTime != -1 && record.endTime < startTime) {
                 //test next product;
             } else {
-                // time match
+                // time matches, now test geo
                 if (point != null) {
                     if (s2CellId == null) {
                         s2CellId = S2CellId.fromPoint(point);
