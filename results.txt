@@ -1,0 +1,133 @@
+             MERIS
+
+test                          products        time
+
+load CSV                         51061       29966 ms
+northsea                          7444         530 ms
+northsea, 1 year                   737          49 ms
+northsea, 1 day                      2           2 ms
+matchups 30k lat/lon/time         3126        9599 ms
+extracts 3 lat/lon                2898         208 ms
+extracts 3 lat/lon, 1 year         293          20 ms
+
+-------------------------------------------------------
+
+              MODIS
+
+test                          products        time
+
+load CSV                       1202119       56972 ms
+northsea                         61400        2398 ms
+northsea, 1 year                  5227          44 ms
+northsea, 1 day                     16          30 ms
+matchups 30k lat/lon/time         8688      743115 ms
+extracts 3 lat/lon               15606        4115 ms
+extracts 3 lat/lon, 1 year        1371        1464 ms
+
+========================================================
+
+             TEST
+
+test                          products        time
+
+load CSV                           401         380 ms
+northsea                            60          22 ms
+northsea, 1 year                    60          11 ms
+northsea, 1 week                     0           0 ms
+northsea, 1 day                      0           0 ms
+matchups 30k lat/lon/time           14         129 ms
+extracts 3 lat/lon                  22           2 ms
+extracts 3 lat/lon, 1 year          22           2 ms
+
+
+             MERIS
+
+test                          products        time
+
+load CSV                         51061       28708 ms
+northsea                          7444         518 ms
+northsea, 1 year                   737          50 ms
+northsea, 1 week                   739          51 ms
+northsea, 1 day                      2          27 ms
+matchups 30k lat/lon/time         3126       11351 ms
+extracts 3 lat/lon                2898         182 ms
+extracts 3 lat/lon, 1 year         293          20 ms
+
+
+             MODIS
+
+test                          products        time
+
+load CSV                       1202119       19885 ms
+northsea                         61400         223 ms
+northsea, 1 year                  5227          34 ms
+northsea, 1 week                  5317          34 ms
+northsea, 1 day                     16          19 ms
+matchups 30k lat/lon/time         8688      633459 ms
+extracts 3 lat/lon               15606         564 ms
+extracts 3 lat/lon, 1 year        1371          82 ms
+
+
+             TEST
+
+test            products        time
+
+create index         401        1229 ms
+
+
+             TEST
+
+test                          products        time
+
+load CSV                           401          42 ms
+northsea                            52          13 ms
+northsea, 1 year                    52           9 ms
+northsea, 1 week                     0           1 ms
+northsea, 1 day                      0           0 ms
+matchups 30k lat/lon/time           12          20 ms
+extracts 3 lat/lon                  22           6 ms
+extracts 3 lat/lon, 1 year          22           5 ms
+
+
+             MERIS
+
+test            products        time
+
+create index       51061      117187 ms
+
+
+             MERIS
+
+test                          products        time
+
+load CSV                         51061          19 ms
+northsea                          6400        1054 ms
+northsea, 1 year                   633         103 ms
+northsea, 1 week                   632         103 ms
+northsea, 1 day                      2           1 ms
+matchups 30k lat/lon/time         2884         632 ms
+extracts 3 lat/lon                2898         537 ms
+extracts 3 lat/lon, 1 year         293          58 ms
+
+
+             MODIS
+
+test            products        time
+
+create index     1202119      118357 ms
+
+
+             MODIS
+
+test                          products        time
+
+load CSV                       1202119         116 ms
+northsea                         58075         458 ms
+northsea, 1 year                  4930          39 ms
+northsea, 1 week                  5016          41 ms
+northsea, 1 day                     15           0 ms
+matchups 30k lat/lon/time         8677         207 ms
+extracts 3 lat/lon               15607         238 ms
+extracts 3 lat/lon, 1 year        1371          23 ms
+
+

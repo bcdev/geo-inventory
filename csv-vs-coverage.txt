@@ -1,0 +1,28 @@
+             MERIS
+
+                           |           Csv_1           |           Csv_2           |           Csv_3           |      Coverage_1           |      Coverage_2           |      Coverage_3
+test                       |   products        time    |   products        time    |   products        time    |   products        time    |   products        time    |   products        time
+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+--------------------------
+load inventory             |      51061       28396 ms |      51061       26622 ms |      51061       27083 ms |      51061          66 ms |      51061          10 ms |      51061          14 ms
+northsea                   |       7444         527 ms |       7444         529 ms |       7444         539 ms |       7444        1205 ms |       7444        1061 ms |       7444        1053 ms
+northsea, 1 year           |        737          52 ms |        737          48 ms |        737          48 ms |        737         108 ms |        737         104 ms |        737         104 ms
+northsea, 1 week           |         12           3 ms |         12           1 ms |         12           2 ms |         12           3 ms |         12           3 ms |         12           3 ms
+northsea, 1 day            |          2          29 ms |          2           9 ms |          2           7 ms |          2           1 ms |          2           0 ms |          2           0 ms
+matchups 30k lat/lon/time  |       3126       13761 ms |       3126       17256 ms |       3126       16396 ms |       3126         613 ms |       3126         552 ms |       3126         545 ms
+extracts 3 lat/lon         |       2898         179 ms |       2898         237 ms |       2898         162 ms |       2898         506 ms |       2898         484 ms |       2898         487 ms
+extracts 3 lat/lon, 1 year |        293          20 ms |        293          19 ms |        293          26 ms |        293          51 ms |        293          49 ms |        293          48 ms
+
+
+             MODIS
+
+                           |           Csv_1           |           Csv_2           |           Csv_3           |      Coverage_1           |      Coverage_2           |      Coverage_3
+test                       |   products        time    |   products        time    |   products        time    |   products        time    |   products        time    |   products        time
+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+--------------------------
+load inventory             |    1202119       18647 ms |    1202119       18041 ms |    1202119       17919 ms |    1202119         112 ms |    1202119         118 ms |    1202119         112 ms
+northsea                   |      61400         182 ms |      61400         195 ms |      61400         187 ms |      61400         478 ms |      61400         467 ms |      61400         502 ms
+northsea, 1 year           |       5227          34 ms |       5227          35 ms |       5227          34 ms |       5227          41 ms |       5227          67 ms |       5227          40 ms
+northsea, 1 week           |         87          21 ms |         87          21 ms |         87          22 ms |         87           1 ms |         87           2 ms |         87           1 ms
+northsea, 1 day            |         16          21 ms |         16          20 ms |         16          21 ms |         16           0 ms |         16           0 ms |         16           1 ms
+matchups 30k lat/lon/time  |       8688      710214 ms |       8688      694276 ms |       8688      731907 ms |       8688         184 ms |       8688         212 ms |       8688         181 ms
+extracts 3 lat/lon         |      15606         552 ms |      15606         563 ms |      15606         560 ms |      15607         222 ms |      15607         232 ms |      15607         222 ms
+extracts 3 lat/lon, 1 year |       1371          80 ms |       1371          84 ms |       1371          81 ms |       1371          19 ms |       1371          20 ms |       1371          19 ms
