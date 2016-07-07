@@ -4,6 +4,7 @@ import com.bc.geometry.s2.S2WKTReader;
 import com.bc.inventory.insitu.CsvRecordSource;
 import com.bc.inventory.insitu.Record;
 import com.bc.inventory.search.coverage.CoverageInventory;
+import com.bc.inventory.search.csv.CsvFastInventory;
 import com.bc.inventory.search.csv.CsvInventory;
 import com.bc.inventory.utils.Measurement;
 import com.bc.inventory.utils.MeasurementTable;
@@ -42,37 +43,50 @@ public class Benchmark {
         StreamFactory streamFactory = new FileStreamFactory(baseDir);
         constrains = createConstrains();
 
+//        MeasurementTable test = new MeasurementTable("TEST");
         MeasurementTable meris = new MeasurementTable("MERIS");
         MeasurementTable modis = new MeasurementTable("MODIS");
 
         // CSV
-//        testQueries("CSV", mtTest, new CsvInventory("test", streamFactory));
-        testQueries("Csv_1", meris, new CsvInventory("meris", streamFactory));
-        testQueries("Csv_2", meris, new CsvInventory("meris", streamFactory));
-        testQueries("Csv_3", meris, new CsvInventory("meris", streamFactory));
+//        testQueries("CSV", test, new CsvInventory("test", streamFactory));
+//        testQueries("CsvFast", test, new CsvFastInventory("test", streamFactory));
 
-        testQueries("Csv_1", modis, new CsvInventory("modis", streamFactory));
-        testQueries("Csv_2", modis, new CsvInventory("modis", streamFactory));
-        testQueries("Csv_3", modis, new CsvInventory("modis", streamFactory));
+        testQueries("Csv", meris, new CsvInventory("meris", streamFactory));
+        testQueries("CsvFast", meris, new CsvFastInventory("meris", streamFactory));
+
+//        testQueries("Csv_2", meris, new CsvInventory("meris", streamFactory));
+//        testQueries("Csv_3", meris, new CsvInventory("meris", streamFactory));
+
+        testQueries("Csv", modis, new CsvInventory("modis", streamFactory));
+        testQueries("CsvFast", modis, new CsvFastInventory("modis", streamFactory));
+
+//        testQueries("Csv_2", modis, new CsvInventory("modis", streamFactory));
+//        testQueries("Csv_3", modis, new CsvInventory("modis", streamFactory));
 
         // Coverage
 //        testIndexCreation("TEST", "Coverage", mtTest, new CoverageInventory("test", streamFactory));
-//        testQueries("TEST", "Coverage", mtTest, new CoverageInventory("test", streamFactory));
 
+//        testQueries("Coverage", test, new CoverageInventory("test", streamFactory, false));
+//        testQueries("CovIndex", test, new CoverageInventory("test", streamFactory, true));
 
 //        testIndexCreation("MERIS", "Coverage", mtTest, new CoverageInventory("meris", streamFactory));
 
-        testQueries("Coverage_1", meris, new CoverageInventory("meris", streamFactory));
-        testQueries("Coverage_2", meris, new CoverageInventory("meris", streamFactory));
-        testQueries("Coverage_3", meris, new CoverageInventory("meris", streamFactory));
+        testQueries("Coverage", meris, new CoverageInventory("meris", streamFactory, false));
+        testQueries("CovIndex", meris, new CoverageInventory("meris", streamFactory, true));
 
-        testQueries("Coverage_1", modis, new CoverageInventory("modis", streamFactory));
-        testQueries("Coverage_2", modis, new CoverageInventory("modis", streamFactory));
-        testQueries("Coverage_3", modis, new CoverageInventory("modis", streamFactory));
+//        testQueries("Coverage_2", meris, new CoverageInventory("meris", streamFactory));
+//        testQueries("Coverage_3", meris, new CoverageInventory("meris", streamFactory));
+
+        testQueries("Coverage", modis, new CoverageInventory("modis", streamFactory, false));
+        testQueries("CovIndex", modis, new CoverageInventory("modis", streamFactory, true));
+
+//        testQueries("Coverage_2", modis, new CoverageInventory("modis", streamFactory));
+//        testQueries("Coverage_3", modis, new CoverageInventory("modis", streamFactory));
 
 //        testIndexCreation("MODIS", new CoverageInventory("modis", streamFactory));
 //        testQueries("MODIS", new CoverageInventory("modis", streamFactory));
 
+//        test.printMeasurements();
         meris.printMeasurements();
         modis.printMeasurements();
     }

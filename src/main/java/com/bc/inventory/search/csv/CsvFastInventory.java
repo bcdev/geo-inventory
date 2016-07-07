@@ -3,9 +3,14 @@ package com.bc.inventory.search.csv;
 import com.bc.inventory.search.Constrain;
 import com.bc.inventory.search.Inventory;
 import com.bc.inventory.search.StreamFactory;
+import com.bc.inventory.search.coverage.CoverageIndex;
+import com.bc.inventory.utils.S2Integer;
 import com.bc.inventory.utils.SimpleRecord;
+import com.google.common.geometry.S2CellId;
+import com.google.common.geometry.S2CellUnion;
 import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
+import com.google.common.geometry.S2RegionCoverer;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,14 +24,14 @@ import java.util.Set;
 /**
  * A inventory using just a ASCII CSV file as to read the information from.
  */
-public class CsvInventory implements Inventory {
+public class CsvFastInventory implements Inventory {
 
     private final String sensor;
     private final StreamFactory streamFactory;
 
     private List<CsvRecord> csvRecordList;
 
-    public CsvInventory(String sensor, StreamFactory  streamFactory) {
+    public CsvFastInventory(String sensor, StreamFactory streamFactory) {
         this.sensor = sensor;
         this.streamFactory = streamFactory;
     }
@@ -41,6 +46,7 @@ public class CsvInventory implements Inventory {
         try (InputStream inputStream = streamFactory.createInputStream(sensor + "_products_list.csv")) {
             CsvRecordReader csvRecordReader = new CsvRecordReader(inputStream);
             csvRecordList = csvRecordReader.getCsvRecordList();
+            Collections.sort(csvRecordList, (o1, o2) -> Long.compare(o1.getStartTime(), o2.getStartTime()));
             return csvRecordList.size();
         }
     }
@@ -70,21 +76,57 @@ public class CsvInventory implements Inventory {
         }
     }
 
-    private Collection<String> test(long start, long end, S2Point point, S2Polygon polygon) {
+    private List<String> test(long startTime, long endTime, S2Point point, S2Polygon polygon) {
         List<String> results = new ArrayList<>();
-        for (CsvRecord csvRecord : csvRecordList) {
-            if (start != -1 && csvRecord.getEndTime() < start) {
-                continue;
+        int productIndex = getIndexForTime(startTime);
+        if (productIndex == -1) {
+            return Collections.EMPTY_LIST;
+        }
+
+        boolean finishedWithInsitu = false;
+        while (!finishedWithInsitu) {
+            CsvRecord record = null;
+            if (productIndex < csvRecordList.size()) {
+                record = csvRecordList.get(productIndex);
             }
-            if (end != -1 && csvRecord.getStartTime() > end) {
-                continue;
+
+            if (record == null) {
+                finishedWithInsitu = true;
+            } else if (endTime != -1 && record.getStartTime() > endTime) {
+                finishedWithInsitu = true;
+            } else if (startTime != -1 && record.getEndTime() < startTime) {
+                //test next product;
+            } else {
+                // time matches, now test geo
+                if (point != null) {
+                    if (record.getS2Polygon().contains(point)) {
+                        results.add(Integer.toString(productIndex));
+                    }
+                } else if (polygon != null) {
+                    if (record.getS2Polygon().intersects(polygon)) {
+                        results.add(Integer.toString(productIndex));
+                    }
+                }
             }
-            if (polygon != null && csvRecord.getS2Polygon().intersects(polygon)) {
-                results.add(csvRecord.getPath());
-            } else if (point != null && csvRecord.getS2Polygon().contains(point)) {
-                results.add(csvRecord.getPath());
-            }
+            productIndex++;
         }
         return results;
+    }
+
+    private int getIndexForTime(long startTime) {
+        int low = 0;
+        int high = csvRecordList.size() -1;
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+            final long t1 = csvRecordList.get(mid).getStartTime();
+            if (t1 < startTime) {
+                low = mid + 1;
+            } else if (t1 == startTime) {
+                return mid; // key found
+            } else {
+                high = mid - 1;
+            }
+        }
+        return low == 0 ? low : low - 1;  // key not found
     }
 }

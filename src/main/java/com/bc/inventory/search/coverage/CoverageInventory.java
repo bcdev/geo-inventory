@@ -33,11 +33,13 @@ public class CoverageInventory implements Inventory {
 
     private final String sensor;
     private final StreamFactory streamFactory;
+    private final boolean indexOnly;
     private CoverageIndex index;
 
-    public CoverageInventory(String sensor, StreamFactory streamFactory) {
+    public CoverageInventory(String sensor, StreamFactory streamFactory, boolean indexOnly) {
         this.sensor = sensor;
         this.streamFactory = streamFactory;
+        this.indexOnly = indexOnly;
     }
 
     @Override
@@ -73,7 +75,14 @@ public class CoverageInventory implements Inventory {
             List<Integer> productIDs;
             Collection<String> paths;
             productIDs = testOnIndex(start, end, null, polygon);
-            paths = testPolygonOnData(productIDs, polygon);
+            if (indexOnly) {
+                paths = new ArrayList<>(productIDs.size());
+                for (Integer productID : productIDs) {
+                    paths.add(Integer.toString(productID));
+                }
+            } else {
+                paths = testPolygonOnData(productIDs, polygon);
+            }
             return paths;
         } else {
             Map<Integer, List<S2Point>> candidatesMap = new HashMap<>();
@@ -97,7 +106,14 @@ public class CoverageInventory implements Inventory {
                 }
             }
             List<String> paths;
-            paths = testPointsOnData(candidatesMap);
+            if (indexOnly) {
+                paths = new ArrayList<>(candidatesMap.size());
+                for (Integer productID : candidatesMap.keySet()) {
+                    paths.add(Integer.toString(productID));
+                }
+            } else {
+                paths = testPointsOnData(candidatesMap);
+            }
             return paths;
         }
     }

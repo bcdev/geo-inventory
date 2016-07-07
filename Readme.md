@@ -2,10 +2,12 @@
 
 This repo contains a geo inventory implementation.
 
-Currently two implementations are available:
+Currently following implementations are available:
 
-* using a plain CSV file a a backend
-* using a binary index
+* using a plain CSV file a a backend, brute force testing
+* using a plain CSV file a a backend, intelligent testing (using binary search in time) 
+* using a binary index ONLY gices too many results
+* using a binary index plus a data files containing the polygon data
 
 The geo test are performed using the google S2 library.
 
