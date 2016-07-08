@@ -51,13 +51,13 @@ public class Benchmark {
 //        testQueries("CSV", test, new CsvInventory("test", streamFactory));
 //        testQueries("CsvFast", test, new CsvFastInventory("test", streamFactory));
 
-        testQueries("Csv", meris, new CsvInventory("meris", streamFactory));
+//        testQueries("Csv", meris, new CsvInventory("meris", streamFactory));
         testQueries("CsvFast", meris, new CsvFastInventory("meris", streamFactory));
 
 //        testQueries("Csv_2", meris, new CsvInventory("meris", streamFactory));
 //        testQueries("Csv_3", meris, new CsvInventory("meris", streamFactory));
 
-        testQueries("Csv", modis, new CsvInventory("modis", streamFactory));
+//        testQueries("Csv", modis, new CsvInventory("modis", streamFactory));
         testQueries("CsvFast", modis, new CsvFastInventory("modis", streamFactory));
 
 //        testQueries("Csv_2", modis, new CsvInventory("modis", streamFactory));
@@ -122,7 +122,8 @@ public class Benchmark {
         Constrain c5 = new Constrain("matchups 30k lat/lon/time").withInsitu(latLonTime).withDeltaTime(HOURS_IN_MILLIS * 3);
         Constrain c6 = new Constrain("extracts 3 lat/lon").withInsitu(latLon);
         Constrain c7 = new Constrain("extracts 3 lat/lon, 1 year").withInsitu(latLon).withStart("2005-01-01").witthEnd("2006-01-01");
-        return Arrays.asList(c1, c2, c3, c4, c5, c6, c7);
+        Constrain c8 = new Constrain("1 year").withStart("2005-01-01").witthEnd("2006-01-01");
+        return Arrays.asList(c1, c2, c3, c4, c5, c6, c7, c8);
     }
 
     static List<SimpleRecord> readInsituRecords(File file) throws Exception {
