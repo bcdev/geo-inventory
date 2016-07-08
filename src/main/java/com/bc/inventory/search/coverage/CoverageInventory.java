@@ -150,7 +150,7 @@ public class CoverageInventory implements Inventory {
                     if (S2Integer.containsCellId(coverage, s2CellId)) {
                         results.add(productIndex);
                     }
-                } else {
+                } else if (polygon != null) {
                     if (polygonIntIds == null) {
                         S2RegionCoverer coverer = new S2RegionCoverer();
                         coverer.setMinLevel(0);

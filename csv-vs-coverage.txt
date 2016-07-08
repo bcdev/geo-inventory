@@ -35,13 +35,13 @@ extracts 3 lat/lon, 1 year |       1371          80 ms |       1371          84 
                            |             Csv           |         CsvFast           |        Coverage           |        CovIndex
 test                       |   products        time    |   products        time    |   products        time    |   products        time
 ---------------------------+---------------------------+---------------------------+---------------------------+--------------------------
-load inventory             |      51061       29497 ms |      51061       26751 ms |      51061         575 ms |      51061          11 ms
-northsea                   |       7444         536 ms |       7444         526 ms |       7444        5009 ms |      11824          14 ms
-northsea, 1 year           |        737          51 ms |        737          49 ms |        737         128 ms |       1174           2 ms
+load inventory             |      51061       29497 ms |      51061       26751 ms |      51061          34 ms |      51061          11 ms
+northsea                   |       7444         536 ms |       7444         526 ms |       7444        1257 ms |      11824          14 ms
+northsea, 1 year           |        737          51 ms |        737          49 ms |        737         111 ms |       1174           2 ms
 northsea, 1 week           |         12           4 ms |         12           1 ms |         12           3 ms |         23           0 ms
 northsea, 1 day            |          2          29 ms |          2           6 ms |          2           1 ms |          3           1 ms
-matchups 30k lat/lon/time  |       3126       15188 ms |       3126         233 ms |       3126        3883 ms |       6646          22 ms
-extracts 3 lat/lon         |       2898         190 ms |       2898         238 ms |       2898        3839 ms |       6349           5 ms
+matchups 30k lat/lon/time  |       3126       15188 ms |       3126         233 ms |       3126         740 ms |       6646          22 ms
+extracts 3 lat/lon         |       2898         190 ms |       2898         238 ms |       2898         714 ms |       6349           5 ms
 extracts 3 lat/lon, 1 year |        293          20 ms |        293          17 ms |        293          49 ms |        639           0 ms
 
 
@@ -50,11 +50,11 @@ extracts 3 lat/lon, 1 year |        293          20 ms |        293          17 
                            |             Csv           |         CsvFast           |        Coverage           |        CovIndex
 test                       |   products        time    |   products        time    |   products        time    |   products        time
 ---------------------------+---------------------------+---------------------------+---------------------------+--------------------------
-load inventory             |    1202119       20935 ms |    1202119       18905 ms |    1202119         851 ms |    1202119         115 ms
-northsea                   |      61400         316 ms |      61400         249 ms |      61400        4893 ms |     100599         113 ms
-northsea, 1 year           |       5227          35 ms |       5227          15 ms |       5227          44 ms |       8696          10 ms
+load inventory             |    1202119       20935 ms |    1202119       18905 ms |    1202119         113 ms |    1202119         115 ms
+northsea                   |      61400         316 ms |      61400         249 ms |      61400         511 ms |     100599         113 ms
+northsea, 1 year           |       5227          35 ms |       5227          15 ms |       5227          52 ms |       8696          10 ms
 northsea, 1 week           |         87          21 ms |         87           0 ms |         87           1 ms |        145           1 ms
 northsea, 1 day            |         16          22 ms |         16           0 ms |         16           1 ms |         22           0 ms
-matchups 30k lat/lon/time  |       8688      703205 ms |       8688         461 ms |       8688        1798 ms |      22180          91 ms
-extracts 3 lat/lon         |      15606         552 ms |      15607         576 ms |      15607        1352 ms |      38315          92 ms
-extracts 3 lat/lon, 1 year |       1371          82 ms |       1371          41 ms |       1371          20 ms |       3352           8 ms
+matchups 30k lat/lon/time  |       8688      703205 ms |       8688         461 ms |       8688         208 ms |      22180          91 ms
+extracts 3 lat/lon         |      15606         552 ms |      15607         576 ms |      15607         240 ms |      38315          92 ms
+extracts 3 lat/lon, 1 year |       1371          82 ms |       1371          41 ms |       1371          19 ms |       3352           8 ms
