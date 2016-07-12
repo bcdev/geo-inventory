@@ -159,12 +159,8 @@ public class CoverageInventory implements Inventory {
                         S2CellUnion cellUnion = coverer.getCovering(polygon);
                         polygonIntIds = S2Integer.convertCellUnion(cellUnion);
                     }
-                    int[] coverage = index.allCoverages[record.coverageIndex];
-                    for (int s2CellIdInt : coverage) {
-                        if (S2Integer.intersectsCellId(polygonIntIds, s2CellIdInt)) {
-                            results.add(productIndex);
-                            break;
-                        }
+                    if (S2Integer.intersectsCellUnionFast(polygonIntIds, index.allCoverages[record.coverageIndex])) {
+                        results.add(productIndex);
                     }
                 }
             }

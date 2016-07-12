@@ -22,6 +22,9 @@ import com.google.common.geometry.S2LatLng;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+
+import static com.google.common.collect.Range.greaterThan;
 
 /**
  * S2 methods dealing with a resolution that fits into an integer (32 bit)
@@ -40,6 +43,12 @@ public class S2Integer {
     }
 
     public static strictfp boolean containsCellId(final int[] intCellIds, final int s2CellIdInt) {
+        if (rangeMin(intCellIds[0]) > s2CellIdInt) {
+            return false;
+        }
+        if (rangeMax(intCellIds[intCellIds.length - 1]) < s2CellIdInt) {
+            return false;
+        }
         int pos = Arrays.binarySearch(intCellIds, s2CellIdInt);
         if (pos < 0) {
             pos = -pos - 1;
@@ -77,6 +86,79 @@ public class S2Integer {
         }
         return intIds;
     }
+
+    public static boolean intersectsCellUnion(int[] c1, int[] c2) {
+        for (int s2CellIdInt : c2) {
+            if (S2Integer.intersectsCellId(c1, s2CellIdInt)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean intersectsCellUnionFast(int[] c1, int[] c2) {
+        int i = 0;
+        int j = 0;
+
+        while (i < c1.length && j < c2.length) {
+            int imin = rangeMin(c1[i]);
+            int jmin = rangeMin(c2[j]);
+            if (imin > jmin) {
+                // Either j->contains(*i) or the two cells are disjoint.
+                if (c1[i] <= rangeMax(c2[j])) {
+                    return true;
+                } else {
+                    // Advance "j" to the first cell possibly contained by *i.
+                    j = indexedBinarySearch(c2, imin, j + 1);
+                    // The previous cell *(j-1) may now contain *i.
+                    if (c1[i] <= rangeMax(c2[j - 1])) {
+                        --j;
+                    }
+                }
+            } else if (jmin > imin) {
+                // Identical to the code above with "i" and "j" reversed.
+                if (c2[j] <= rangeMax(c1[i])) {
+                    return true;
+                } else {
+                    i = indexedBinarySearch(c1, jmin, i + 1);
+                    if (c2[j] <= rangeMax(c1[i - 1])) {
+                        --i;
+                    }
+                }
+            } else {
+                // "i" and "j" have the same range_min(), so one contains the other.
+                return true;
+            }
+        }
+        return false;
+    }
+    /**
+     * Just as normal binary search, except that it allows specifying the starting
+     * value for the lower bound.
+     *
+     * @return The position of the searched element in the list (if found), or the
+     *         position where the element could be inserted without violating the
+     *         order.
+     */
+    private static int indexedBinarySearch(int[] l, int key, int low) {
+      int high = l.length - 1;
+
+      while (low <= high) {
+        int mid = (low + high) >> 1;
+        int midVal = l[mid];
+
+        if (midVal < key) {
+          low = mid + 1;
+        } else if (midVal > key) {
+          high = mid - 1;
+        } else {
+          return mid; // key found
+        }
+      }
+      return low; // key not found
+    }
+
+
 
     public static class Coverage {
 
