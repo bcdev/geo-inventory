@@ -7,8 +7,12 @@ import com.bc.inventory.search.csv.CsvRecord;
 import com.bc.inventory.search.csv.CsvRecordReader;
 import com.bc.inventory.utils.S2Integer;
 import com.bc.inventory.utils.SimpleRecord;
+import com.bc.inventory.utils.StartStopWatch;
+import com.google.common.geometry.R1Interval;
+import com.google.common.geometry.S1Interval;
 import com.google.common.geometry.S2CellId;
 import com.google.common.geometry.S2CellUnion;
+import com.google.common.geometry.S2LatLngRect;
 import com.google.common.geometry.S2Loop;
 import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
@@ -19,6 +23,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -171,7 +176,9 @@ public class CoverageInventory implements Inventory {
 
     private Collection<String> testPolygonOnData(List<Integer> uniqueProductList, S2Polygon polygon) {
         Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(index.records[o1].dataOffset, index.records[o2].dataOffset));
-
+        StartStopWatch read = new StartStopWatch();
+        StartStopWatch create = new StartStopWatch();
+        StartStopWatch test = new StartStopWatch();
         try (
                 DataInputStream dis = new DataInputStream(new BufferedInputStream(streamFactory.createInputStream(sensor + "_coverage.data")))
         ) {
@@ -179,22 +186,35 @@ public class CoverageInventory implements Inventory {
             int streamPOS = 0;
             for (Integer productID : uniqueProductList) {
                 CoverageIndex.IndexRecord record = index.records[productID];
+
+                read.start();
                 dis.skipBytes(record.dataOffset - streamPOS);
 
                 // read polygon
                 final int numLoopPoints = dis.readInt();
-                final int numPointBytes = numLoopPoints * 3 * 8;
-                final byte[] pointData = new byte[numPointBytes];
-                dis.readFully(pointData, 0, numPointBytes);
-                streamPOS = record.dataOffset + 4 + numPointBytes;
+                final int numLoopBytes = numLoopPoints * 3 * 8 + 4 * 8 + 4 + 1;
+                final byte[] loopBytes = new byte[numLoopBytes];
+                dis.readFully(loopBytes, 0, numLoopBytes);
+                streamPOS = record.dataOffset + 4 + numLoopBytes;
+                read.stop();
 
-                S2Polygon productPolygon = createS2Polygon(pointData);
-                if (productPolygon.intersects(polygon)) {
+                create.start();
+                S2Polygon productPolygon = createS2Polygon(loopBytes, numLoopPoints);
+                create.stop();
+
+                test.start();
+                boolean intersects = productPolygon.intersects(polygon);
+                test.stop();
+
+                if (intersects) {
                     String path = dis.readUTF();
                     matches.add(path);
                     streamPOS = streamPOS + path.length() + 2;
                 }
             }
+            System.out.println("read   = " + read.getSum());
+            System.out.println("create = " + create.getSum());
+            System.out.println("test   = " + test.getSum());
             return matches;
         } catch (IOException e) {
             e.printStackTrace();
@@ -218,12 +238,11 @@ public class CoverageInventory implements Inventory {
 
                 // read polygon
                 final int numLoopPoints = dis.readInt();
-                final int numPointBytes = numLoopPoints * 3 * 8;
-                final byte[] pointData = new byte[numPointBytes];
-                dis.readFully(pointData, 0, numPointBytes);
-                streamPOS = record.dataOffset + 4 + numPointBytes;
-
-                S2Polygon productPolygon = createS2Polygon(pointData);
+                final int numLoopBytes = numLoopPoints * 3 * 8 + 4 * 8 + 4 +1;
+                final byte[] loopBytes = new byte[numLoopBytes];
+                dis.readFully(loopBytes, 0, numLoopBytes);
+                streamPOS = record.dataOffset + 4 + numLoopBytes;
+                S2Polygon productPolygon = createS2Polygon(loopBytes, numLoopPoints);
 
                 List<S2Point> s2Points = candidatesMap.get(productID);
                 boolean readPath = false;
@@ -246,43 +265,28 @@ public class CoverageInventory implements Inventory {
         }
     }
 
-    private S2Polygon createS2Polygon(byte[] pointDataByte) {
-        List<S2Point> vertices = new ArrayList<S2Point>(pointDataByte.length / (3 * 8));
+    private S2Polygon createS2Polygon(byte[] loopByte, int numLoopPoints) {
+        ByteBuffer bb = ByteBuffer.wrap(loopByte);
 
-        for (int i = 0; i < pointDataByte.length; ) {
-            double x = toDouble(pointDataByte, i);
-            i += 8;
-            double y = toDouble(pointDataByte, i);
-            i += 8;
-            double z = toDouble(pointDataByte, i);
-            i += 8;
-            S2Point s2Point = new S2Point(x, y, z);
-            vertices.add(s2Point);
+        S2Point[] vertices = new S2Point[numLoopPoints];
+        for (int i = 0; i < numLoopPoints; i++) {
+            double x = bb.getDouble();
+            double y = bb.getDouble();
+            double z = bb.getDouble();
+            vertices[i] = new S2Point(x, y, z);
         }
-        return new S2Polygon(new S2Loop(vertices));
-    }
+        double latLo = bb.getDouble();
+        double latHi = bb.getDouble();
+        double lngLo = bb.getDouble();
+        double lngHi = bb.getDouble();
+        R1Interval lat = new R1Interval(latLo, latHi);
+        S1Interval lng = new S1Interval(lngLo, lngHi);
+        S2LatLngRect bound = new S2LatLngRect(lat, lng);
 
-    private double toDouble(byte[] bytebuf, int boff) {
-        long l = ((long) bytebuf[boff] << 56) +
-                ((long) (bytebuf[boff + 1] & 255) << 48) +
-                ((long) (bytebuf[boff + 2] & 255) << 40) +
-                ((long) (bytebuf[boff + 3] & 255) << 32) +
-                ((long) (bytebuf[boff + 4] & 255) << 24) +
-                ((bytebuf[boff + 5] & 255) << 16) +
-                ((bytebuf[boff + 6] & 255) << 8) +
-                ((bytebuf[boff + 7] & 255) << 0);
-        return Double.longBitsToDouble(l);
-    }
+        int firstLogicalVertex = bb.getInt();
+        boolean originInside = (bb.get() == 1);
+        S2Loop loop = new S2Loop(vertices, bound, firstLogicalVertex, originInside);
 
-    static S2Polygon createS2Polygon(double[] poygonData) {
-        List<S2Point> vertices = new ArrayList<S2Point>(poygonData.length / 3);
-        for (int i = 0; i < poygonData.length; ) {
-            double x = poygonData[i++];
-            double y = poygonData[i++];
-            double z = poygonData[i++];
-            S2Point s2Point = new S2Point(x, y, z);
-            vertices.add(s2Point);
-        }
-        return new S2Polygon(new S2Loop(vertices));
+        return new S2Polygon(loop);
     }
 }

@@ -4,6 +4,7 @@ import com.bc.inventory.search.csv.CsvRecord;
 import com.bc.inventory.utils.S2Integer;
 import com.google.common.geometry.S2CellId;
 import com.google.common.geometry.S2CellUnion;
+import com.google.common.geometry.S2LatLngRect;
 import com.google.common.geometry.S2Loop;
 import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
@@ -99,6 +100,21 @@ public class CoverageIndex {
             dos.writeDouble(vertex.getY());
             dos.writeDouble(vertex.getZ());
         }
+
+        S2LatLngRect bound = loop.getRectBound();
+        double latLo = bound.lat().lo();
+        double latHi = bound.lat().hi();
+        double lngLo = bound.lng().lo();
+        double lngHi = bound.lng().hi();
+        dos.writeDouble(latLo);
+        dos.writeDouble(latHi);
+        dos.writeDouble(lngLo);
+        dos.writeDouble(lngHi);
+
+        int firstLogicalVertex = loop.getFirstLogicalVertex();
+        dos.writeInt(firstLogicalVertex);
+        boolean originInside = loop.isOriginInside();
+        dos.writeBoolean(originInside);
     }
 
     public void load(InputStream indexIS) throws IOException {
