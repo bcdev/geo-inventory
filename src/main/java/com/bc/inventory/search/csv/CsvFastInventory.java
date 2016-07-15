@@ -3,14 +3,9 @@ package com.bc.inventory.search.csv;
 import com.bc.inventory.search.Constrain;
 import com.bc.inventory.search.Inventory;
 import com.bc.inventory.search.StreamFactory;
-import com.bc.inventory.search.coverage.CoverageIndex;
-import com.bc.inventory.utils.S2Integer;
 import com.bc.inventory.utils.SimpleRecord;
-import com.google.common.geometry.S2CellId;
-import com.google.common.geometry.S2CellUnion;
 import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
-import com.google.common.geometry.S2RegionCoverer;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,8 +39,7 @@ public class CsvFastInventory implements Inventory {
     @Override
     public int loadIndex() throws IOException {
         try (InputStream inputStream = streamFactory.createInputStream(sensor + "_products_list.csv")) {
-            CsvRecordReader csvRecordReader = new CsvRecordReader(inputStream);
-            csvRecordList = csvRecordReader.getCsvRecordList();
+            csvRecordList = CsvRecordReader.readAllRecords(inputStream);
             Collections.sort(csvRecordList, (o1, o2) -> Long.compare(o1.getStartTime(), o2.getStartTime()));
             return csvRecordList.size();
         }

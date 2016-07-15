@@ -39,8 +39,7 @@ public class CsvInventory implements Inventory {
     @Override
     public int loadIndex() throws IOException {
         try (InputStream inputStream = streamFactory.createInputStream(sensor + "_products_list.csv")) {
-            CsvRecordReader csvRecordReader = new CsvRecordReader(inputStream);
-            csvRecordList = csvRecordReader.getCsvRecordList();
+            csvRecordList = CsvRecordReader.readAllRecords(inputStream);
             return csvRecordList.size();
         }
     }

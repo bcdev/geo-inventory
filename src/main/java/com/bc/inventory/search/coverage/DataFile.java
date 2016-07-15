@@ -130,5 +130,4 @@ class DataFile {
 
         return new S2Polygon(loop);
     }
-
 }

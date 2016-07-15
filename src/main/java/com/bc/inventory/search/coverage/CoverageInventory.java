@@ -42,8 +42,7 @@ public class CoverageInventory implements Inventory {
     @Override
     public int createIndex() throws IOException {
         try (InputStream inputStream = streamFactory.createInputStream(sensor + "_products_list.csv")) {
-            CsvRecordReader csvRecordReader = new CsvRecordReader(inputStream);
-            List<CsvRecord> csvRecordList = csvRecordReader.getCsvRecordList();
+            List<CsvRecord> csvRecordList = CsvRecordReader.readAllRecords(inputStream);
 
             OutputStream indexOS = streamFactory.createOutputStream(sensor + "_coverage.index");
             OutputStream dataOS = streamFactory.createOutputStream(sensor + "_coverage.data");
