@@ -4,10 +4,6 @@ import com.bc.inventory.search.csv.CsvRecord;
 import com.bc.inventory.utils.S2Integer;
 import com.google.common.geometry.S2CellId;
 import com.google.common.geometry.S2CellUnion;
-import com.google.common.geometry.S2LatLngRect;
-import com.google.common.geometry.S2Loop;
-import com.google.common.geometry.S2Point;
-import com.google.common.geometry.S2Polygon;
 import com.google.common.geometry.S2RegionCoverer;
 
 import java.io.BufferedInputStream;
@@ -36,7 +32,7 @@ public class CoverageIndex {
         List<S2Integer.Coverage> allCoverages = new ArrayList<>();
         try (
                 DataOutputStream dosIndex = new DataOutputStream(new BufferedOutputStream(indexOS));
-                DataOutputStream dosData = new DataOutputStream(new BufferedOutputStream(dataOS))
+                DataFile.Writer dataWriter = new DataFile.Writer(dataOS);
         ) {
             int counter = 0;
             dosIndex.writeInt(csvRecordList.size());
@@ -68,10 +64,8 @@ public class CoverageIndex {
                 dosIndex.writeInt(level1Mask);
                 // TODO remove, mask is no longer used
 
-                dosIndex.writeInt(dosData.size());
-
-                writePolygon(csvRecord.getS2Polygon(), dosData);
-                dosData.writeUTF(csvRecord.getPath());
+                int dataOffset = dataWriter.writeRecord(csvRecord.getS2Polygon(), csvRecord.getPath());
+                dosIndex.writeInt(dataOffset);
 
                 counter++;
                 if (counter % 10000 == 0) {
@@ -87,34 +81,6 @@ public class CoverageIndex {
                 }
             }
         }
-    }
-
-    private static void writePolygon(S2Polygon s2Polygon, DataOutputStream dos) throws IOException {
-        S2Loop loop = s2Polygon.loop(0);
-        int numVertices = loop.numVertices();
-        dos.writeInt(numVertices);
-
-        for (int i = 0; i < numVertices; i++) {
-            S2Point vertex = loop.vertex(i);
-            dos.writeDouble(vertex.getX());
-            dos.writeDouble(vertex.getY());
-            dos.writeDouble(vertex.getZ());
-        }
-
-        S2LatLngRect bound = loop.getRectBound();
-        double latLo = bound.lat().lo();
-        double latHi = bound.lat().hi();
-        double lngLo = bound.lng().lo();
-        double lngHi = bound.lng().hi();
-        dos.writeDouble(latLo);
-        dos.writeDouble(latHi);
-        dos.writeDouble(lngLo);
-        dos.writeDouble(lngHi);
-
-        int firstLogicalVertex = loop.getFirstLogicalVertex();
-        dos.writeInt(firstLogicalVertex);
-        boolean originInside = loop.isOriginInside();
-        dos.writeBoolean(originInside);
     }
 
     public void load(InputStream indexIS) throws IOException {

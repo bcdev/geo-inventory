@@ -7,23 +7,15 @@ import com.bc.inventory.search.csv.CsvRecord;
 import com.bc.inventory.search.csv.CsvRecordReader;
 import com.bc.inventory.utils.S2Integer;
 import com.bc.inventory.utils.SimpleRecord;
-import com.bc.inventory.utils.StartStopWatch;
-import com.google.common.geometry.R1Interval;
-import com.google.common.geometry.S1Interval;
 import com.google.common.geometry.S2CellId;
 import com.google.common.geometry.S2CellUnion;
-import com.google.common.geometry.S2LatLngRect;
-import com.google.common.geometry.S2Loop;
 import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
 import com.google.common.geometry.S2RegionCoverer;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -174,52 +166,24 @@ public class CoverageInventory implements Inventory {
         return results;
     }
 
-    private Collection<String> testPolygonOnData(List<Integer> uniqueProductList, S2Polygon polygon) {
+    private Collection<String> testPolygonOnData(List<Integer> uniqueProductList, S2Polygon searchPolygon) {
         Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(index.records[o1].dataOffset, index.records[o2].dataOffset));
-        StartStopWatch read = new StartStopWatch();
-        StartStopWatch create = new StartStopWatch();
-        StartStopWatch test = new StartStopWatch();
+        List<String> matches = new ArrayList<>();
         try (
-                DataInputStream dis = new DataInputStream(new BufferedInputStream(streamFactory.createInputStream(sensor + "_coverage.data")))
+                DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(sensor + "_coverage.data"))
         ) {
-            List<String> matches = new ArrayList<>();
-            int streamPOS = 0;
             for (Integer productID : uniqueProductList) {
                 CoverageIndex.IndexRecord record = index.records[productID];
 
-                read.start();
-                dis.skipBytes(record.dataOffset - streamPOS);
-
-                // read polygon
-                final int numLoopPoints = dis.readInt();
-                final int numLoopBytes = numLoopPoints * 3 * 8 + 4 * 8 + 4 + 1;
-                final byte[] loopBytes = new byte[numLoopBytes];
-                dis.readFully(loopBytes, 0, numLoopBytes);
-                streamPOS = record.dataOffset + 4 + numLoopBytes;
-                read.stop();
-
-                create.start();
-                S2Polygon productPolygon = createS2Polygon(loopBytes, numLoopPoints);
-                create.stop();
-
-                test.start();
-                boolean intersects = productPolygon.intersects(polygon);
-                test.stop();
-
-                if (intersects) {
-                    String path = dis.readUTF();
-                    matches.add(path);
-                    streamPOS = streamPOS + path.length() + 2;
+                reader.seekTo(record.dataOffset);
+                if (reader.readPolygon().intersects(searchPolygon)) {
+                    matches.add(reader.readPath());
                 }
             }
-            System.out.println("read   = " + read.getSum());
-            System.out.println("create = " + create.getSum());
-            System.out.println("test   = " + test.getSum());
-            return matches;
         } catch (IOException e) {
             e.printStackTrace();
-            return Collections.EMPTY_LIST;
         }
+        return matches;
     }
 
     private List<String> testPointsOnData(Map<Integer, List<S2Point>> candidatesMap) {
@@ -227,23 +191,15 @@ public class CoverageInventory implements Inventory {
         List<Integer> uniqueProductList = new ArrayList<>(candidatesMap.keySet());
         Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(index.records[o1].dataOffset, index.records[o2].dataOffset));
 
+        List<String> matches = new ArrayList<>();
         try (
-                DataInputStream dis = new DataInputStream(new BufferedInputStream(streamFactory.createInputStream(sensor + "_coverage.data")))
+                DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(sensor + "_coverage.data"))
         ) {
-            List<String> matches = new ArrayList<>();
-            int streamPOS = 0;
             for (Integer productID : uniqueProductList) {
                 CoverageIndex.IndexRecord record = index.records[productID];
-                dis.skipBytes(record.dataOffset - streamPOS);
+                reader.seekTo(record.dataOffset);
 
-                // read polygon
-                final int numLoopPoints = dis.readInt();
-                final int numLoopBytes = numLoopPoints * 3 * 8 + 4 * 8 + 4 +1;
-                final byte[] loopBytes = new byte[numLoopBytes];
-                dis.readFully(loopBytes, 0, numLoopBytes);
-                streamPOS = record.dataOffset + 4 + numLoopBytes;
-                S2Polygon productPolygon = createS2Polygon(loopBytes, numLoopPoints);
-
+                S2Polygon productPolygon = reader.readPolygon();
                 List<S2Point> s2Points = candidatesMap.get(productID);
                 boolean readPath = false;
                 for (S2Point s2Point : s2Points) {
@@ -253,40 +209,13 @@ public class CoverageInventory implements Inventory {
                     }
                 }
                 if (readPath) {
-                    String path = dis.readUTF();
-                    matches.add(path);
-                    streamPOS = streamPOS + path.length() + 2;
+                    matches.add(reader.readPath());
                 }
             }
             return matches;
         } catch (IOException e) {
             e.printStackTrace();
-            return Collections.EMPTY_LIST;
         }
-    }
-
-    private S2Polygon createS2Polygon(byte[] loopByte, int numLoopPoints) {
-        ByteBuffer bb = ByteBuffer.wrap(loopByte);
-
-        S2Point[] vertices = new S2Point[numLoopPoints];
-        for (int i = 0; i < numLoopPoints; i++) {
-            double x = bb.getDouble();
-            double y = bb.getDouble();
-            double z = bb.getDouble();
-            vertices[i] = new S2Point(x, y, z);
-        }
-        double latLo = bb.getDouble();
-        double latHi = bb.getDouble();
-        double lngLo = bb.getDouble();
-        double lngHi = bb.getDouble();
-        R1Interval lat = new R1Interval(latLo, latHi);
-        S1Interval lng = new S1Interval(lngLo, lngHi);
-        S2LatLngRect bound = new S2LatLngRect(lat, lng);
-
-        int firstLogicalVertex = bb.getInt();
-        boolean originInside = (bb.get() == 1);
-        S2Loop loop = new S2Loop(vertices, bound, firstLogicalVertex, originInside);
-
-        return new S2Polygon(loop);
+        return matches;
     }
 }
