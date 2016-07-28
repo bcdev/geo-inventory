@@ -6,6 +6,7 @@ import com.bc.inventory.insitu.Record;
 import com.bc.inventory.search.coverage.CoverageInventory;
 import com.bc.inventory.search.csv.CsvFastInventory;
 import com.bc.inventory.search.csv.CsvInventory;
+import com.bc.inventory.search.ng.NgInventory;
 import com.bc.inventory.utils.Measurement;
 import com.bc.inventory.utils.MeasurementTable;
 import com.bc.inventory.utils.SimpleRecord;
@@ -20,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+
+import static javafx.scene.input.KeyCode.M;
 
 /**
  * A benchmark for comparing different geo inventory solutions.
@@ -43,52 +46,26 @@ public class Benchmark {
         StreamFactory streamFactory = new FileStreamFactory(baseDir);
         constrains = createConstrains();
 
-//        MeasurementTable test = new MeasurementTable("TEST");
-        MeasurementTable meris = new MeasurementTable("MERIS");
-        MeasurementTable modis = new MeasurementTable("MODIS");
+//        measure(streamFactory, "test");
+        measure(streamFactory, "meris");
+        measure(streamFactory, "modis");
+    }
 
-        // CSV
-//        testQueries("CSV", test, new CsvInventory("test", streamFactory));
-//        testQueries("CsvFast", test, new CsvFastInventory("test", streamFactory));
+    private static void measure(StreamFactory streamFactory, String ds) throws IOException {
+        MeasurementTable test = new MeasurementTable(ds);
 
-//        testQueries("Csv", meris, new CsvInventory("meris", streamFactory));
-        testQueries("CsvFast", meris, new CsvFastInventory("meris", streamFactory));
+//        testQueries("CSV", test, new CsvInventory(ds, streamFactory));
+//        testQueries("CsvFast", test, new CsvFastInventory(ds, streamFactory));
 
-//        testQueries("Csv_2", meris, new CsvInventory("meris", streamFactory));
-//        testQueries("Csv_3", meris, new CsvInventory("meris", streamFactory));
+//        testIndexCreation("Coverage", test, new CoverageInventory(ds, streamFactory, false));
+        testQueries("Coverage", test, new CoverageInventory(ds, streamFactory, false));
+        testQueries("CovIndex", test, new CoverageInventory(ds, streamFactory, true));
 
-//        testQueries("Csv", modis, new CsvInventory("modis", streamFactory));
-        testQueries("CsvFast", modis, new CsvFastInventory("modis", streamFactory));
+//        testIndexCreation("Ng", test, new NgInventory(ds, streamFactory, false));
+        testQueries("Ng", test, new NgInventory(ds, streamFactory, false));
+        testQueries("NgIndex", test, new NgInventory(ds, streamFactory, true));
 
-//        testQueries("Csv_2", modis, new CsvInventory("modis", streamFactory));
-//        testQueries("Csv_3", modis, new CsvInventory("modis", streamFactory));
-
-        // Coverage
-//        testIndexCreation("TEST", "Coverage", mtTest, new CoverageInventory("test", streamFactory));
-
-//        testQueries("Coverage", test, new CoverageInventory("test", streamFactory, false));
-//        testQueries("CovIndex", test, new CoverageInventory("test", streamFactory, true));
-
-//        testIndexCreation("MERIS", "Coverage", mtTest, new CoverageInventory("meris", streamFactory));
-
-        testQueries("Coverage", meris, new CoverageInventory("meris", streamFactory, false));
-        testQueries("CovIndex", meris, new CoverageInventory("meris", streamFactory, true));
-
-//        testQueries("Coverage_2", meris, new CoverageInventory("meris", streamFactory));
-//        testQueries("Coverage_3", meris, new CoverageInventory("meris", streamFactory));
-
-        testQueries("Coverage", modis, new CoverageInventory("modis", streamFactory, false));
-        testQueries("CovIndex", modis, new CoverageInventory("modis", streamFactory, true));
-
-//        testQueries("Coverage_2", modis, new CoverageInventory("modis", streamFactory));
-//        testQueries("Coverage_3", modis, new CoverageInventory("modis", streamFactory));
-
-//        testIndexCreation("MODIS", new CoverageInventory("modis", streamFactory));
-//        testQueries("MODIS", new CoverageInventory("modis", streamFactory));
-
-//        test.printMeasurements();
-        meris.printMeasurements();
-        modis.printMeasurements();
+        test.printMeasurements();
     }
 
     private static void testIndexCreation(String engine, MeasurementTable mt, Inventory inventory) throws IOException {
@@ -124,6 +101,7 @@ public class Benchmark {
         Constrain c7 = new Constrain("extracts 3 lat/lon, 1 year").withInsitu(latLon).withStart("2005-01-01").witthEnd("2006-01-01");
         Constrain c8 = new Constrain("1 year").withStart("2005-01-01").witthEnd("2006-01-01");
         return Arrays.asList(c1, c2, c3, c4, c5, c6, c7, c8);
+//        return Arrays.asList();
     }
 
     static List<SimpleRecord> readInsituRecords(File file) throws Exception {

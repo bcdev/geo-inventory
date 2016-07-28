@@ -25,6 +25,11 @@ public class FileStreamFactory implements StreamFactory {
 
     @Override
     public OutputStream createOutputStream(String name) throws IOException {
-        return new FileOutputStream(new File(baseDir, name));
+        File file = new File(baseDir, name);
+        File parentFile = file.getParentFile();
+        if (!parentFile.exists()) {
+            parentFile.mkdirs();
+        }
+        return new FileOutputStream(file);
     }
 }

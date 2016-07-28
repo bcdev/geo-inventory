@@ -43,7 +43,7 @@ public class CsvRecordReader {
         return new CsvRecordIterator(inputStream);
     }
 
-    private static class CsvRecordIterator implements Iterator<CsvRecord>, AutoCloseable{
+    public static class CsvRecordIterator implements Iterator<CsvRecord>, AutoCloseable{
 
         private final BufferedReader bufferedReader;
         private String line;

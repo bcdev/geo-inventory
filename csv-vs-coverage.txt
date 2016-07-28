@@ -58,3 +58,39 @@ northsea, 1 day            |         16          22 ms |         16           0 
 matchups 30k lat/lon/time  |       8688      703205 ms |       8688         461 ms |       8688         208 ms |      22180          91 ms
 extracts 3 lat/lon         |      15606         552 ms |      15607         576 ms |      15607         240 ms |      38315          92 ms
 extracts 3 lat/lon, 1 year |       1371          82 ms |       1371          41 ms |       1371          19 ms |       3352           8 ms
+
+
+====================================================================================================================
+             meris
+
+                           |         CsvFast           |        Coverage           |        CovIndex           |              Ng           |         NgIndex
+test                       |   products        time    |   products        time    |   products        time    |   products        time    |   products        time
+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+--------------------------
+create index               |                           |      51061      122755 ms |                           |      51061      115383 ms |
+
+load inventory             |      51061       28770 ms |      51061          19 ms |      51061          10 ms |      51061          13 ms |      51061           9 ms
+northsea                   |       7444         503 ms |       7444         261 ms |      11824           3 ms |       7444         256 ms |      11824           3 ms
+northsea, 1 year           |        737          50 ms |        737          25 ms |       1174           0 ms |        737          26 ms |       1174           0 ms
+northsea, 1 week           |         12           1 ms |         12           1 ms |         23           0 ms |         12           1 ms |         23           1 ms
+northsea, 1 day            |          2           3 ms |          2           0 ms |          3           0 ms |          2           0 ms |          3           0 ms
+matchups 30k lat/lon/time  |       3126         255 ms |       3126         148 ms |       6646          21 ms |       3126         133 ms |       6646          20 ms
+extracts 3 lat/lon         |       2898         220 ms |       2898          68 ms |       6349           4 ms |       2898          68 ms |       6349           5 ms
+extracts 3 lat/lon, 1 year |        293          19 ms |        293           7 ms |        639           1 ms |        293           8 ms |        639           0 ms
+1 year                     |          0           0 ms |          0           0 ms |          0           0 ms |          0           0 ms |          0           0 ms
+
+             modis
+
+                           |         CsvFast           |        Coverage           |        CovIndex           |              Ng           |         NgIndex
+test                       |   products        time    |   products        time    |   products        time    |   products        time    |   products        time
+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+--------------------------
+create index               |                           |    1202119      121273 ms |                           |    1202119      121204 ms |
+
+load inventory             |    1202119       22323 ms |    1202119          93 ms |    1202119          93 ms |    1202119          83 ms |    1202119          91 ms
+northsea                   |      61400         210 ms |      61400         163 ms |     100599          42 ms |      61400         172 ms |     100599          41 ms
+northsea, 1 year           |       5227          16 ms |       5227          13 ms |       8696           4 ms |       5227          15 ms |       8696           4 ms
+northsea, 1 week           |         87           0 ms |         87           1 ms |        145           0 ms |         87           0 ms |        145           0 ms
+northsea, 1 day            |         16           0 ms |         16           0 ms |         22           0 ms |         16           1 ms |         22           0 ms
+matchups 30k lat/lon/time  |       8688         469 ms |       8688         217 ms |      22180          86 ms |       8688         193 ms |      22180          89 ms
+extracts 3 lat/lon         |      15607         586 ms |      15607         191 ms |      38315         104 ms |      15607         168 ms |      38315          87 ms
+extracts 3 lat/lon, 1 year |       1371          44 ms |       1371          13 ms |       3352           6 ms |       1371          14 ms |       3352           7 ms
+1 year                     |          0           2 ms |          0           1 ms |          0           1 ms |          0           1 ms |          0           1 ms

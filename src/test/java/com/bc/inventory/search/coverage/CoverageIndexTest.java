@@ -9,9 +9,9 @@ public class CoverageIndexTest {
     @Test
     public void indexedBinarySearch() throws Exception {
         CoverageIndex.IndexRecord[] records = new CoverageIndex.IndexRecord[3];
-        records[0] = new CoverageIndex.IndexRecord(3, 6, 0, 0, 0);
-        records[1] = new CoverageIndex.IndexRecord(10, 15, 0, 0, 0);
-        records[2] = new CoverageIndex.IndexRecord(20, 30, 0, 0, 0);
+        records[0] = new CoverageIndex.IndexRecord(3, 6, 0, 0);
+        records[1] = new CoverageIndex.IndexRecord(10, 15, 0, 0);
+        records[2] = new CoverageIndex.IndexRecord(20, 30, 0, 0);
 
         assertEquals(0, CoverageIndex.indexedBinarySearch(records, 1));
         assertEquals(0, CoverageIndex.indexedBinarySearch(records, 2));

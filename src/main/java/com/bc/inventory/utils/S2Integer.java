@@ -19,6 +19,8 @@ package com.bc.inventory.utils;
 import com.google.common.geometry.S2CellId;
 import com.google.common.geometry.S2CellUnion;
 import com.google.common.geometry.S2LatLng;
+import com.google.common.geometry.S2Polygon;
+import com.google.common.geometry.S2RegionCoverer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -76,10 +78,11 @@ public class S2Integer {
 
     public static int lowestOnBit(int s2cell) {
         return s2cell & -s2cell;
-      }
+    }
 
     public static int[] convertCellUnion(S2CellUnion cellUnion) {
-        int[] intIds;ArrayList<S2CellId> s2CellIds = cellUnion.cellIds();
+        int[] intIds;
+        ArrayList<S2CellId> s2CellIds = cellUnion.cellIds();
         intIds = new int[s2CellIds.size()];
         for (int i = 0; i < intIds.length; i++) {
             intIds[i] = S2Integer.asInt(s2CellIds.get(i));
@@ -132,40 +135,55 @@ public class S2Integer {
         }
         return false;
     }
+
     /**
      * Just as normal binary search, except that it allows specifying the starting
      * value for the lower bound.
      *
      * @return The position of the searched element in the list (if found), or the
-     *         position where the element could be inserted without violating the
-     *         order.
+     * position where the element could be inserted without violating the
+     * order.
      */
     private static int indexedBinarySearch(int[] l, int key, int low) {
-      int high = l.length - 1;
+        int high = l.length - 1;
 
-      while (low <= high) {
-        int mid = (low + high) >> 1;
-        int midVal = l[mid];
+        while (low <= high) {
+            int mid = (low + high) >> 1;
+            int midVal = l[mid];
 
-        if (midVal < key) {
-          low = mid + 1;
-        } else if (midVal > key) {
-          high = mid - 1;
-        } else {
-          return mid; // key found
+            if (midVal < key) {
+                low = mid + 1;
+            } else if (midVal > key) {
+                high = mid - 1;
+            } else {
+                return mid; // key found
+            }
         }
-      }
-      return low; // key not found
+        return low; // key not found
     }
 
+    public static Coverage createS2IntCoverage(S2Polygon s2polygon, int maxLevel) {
+        return new S2Integer.Coverage(createS2IntIds(s2polygon, maxLevel));
+    }
 
+    public static int[] createS2IntIds(S2Polygon s2polygon, int maxLevel) {
+        return convertCellUnion(getS2CellIds(s2polygon, maxLevel));
+    }
+
+    private static S2CellUnion getS2CellIds(S2Polygon s2polygon, int maxLevel) {
+        S2RegionCoverer coverer = new S2RegionCoverer();
+        coverer.setMinLevel(0);
+        coverer.setMaxLevel(maxLevel);
+        coverer.setMaxCells(500);
+        return coverer.getCovering(s2polygon);
+    }
 
     public static class Coverage {
 
         public final int[] intIds;
 
-        public Coverage(S2CellUnion cellUnion) {
-            intIds = convertCellUnion(cellUnion);
+        public Coverage(int[] intIds) {
+            this.intIds = intIds;
         }
 
         @Override

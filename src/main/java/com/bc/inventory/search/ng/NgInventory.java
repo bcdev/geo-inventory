@@ -1,4 +1,4 @@
-package com.bc.inventory.search.coverage;
+package com.bc.inventory.search.ng;
 
 import com.bc.inventory.search.Constrain;
 import com.bc.inventory.search.Inventory;
@@ -8,10 +8,8 @@ import com.bc.inventory.search.csv.CsvRecordReader;
 import com.bc.inventory.utils.S2Integer;
 import com.bc.inventory.utils.SimpleRecord;
 import com.google.common.geometry.S2CellId;
-import com.google.common.geometry.S2CellUnion;
 import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
-import com.google.common.geometry.S2RegionCoverer;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,9 +24,8 @@ import java.util.Map;
 /**
  * An inventory based on a list of coverages.
  */
-public class CoverageInventory implements Inventory {
+public class NgInventory implements Inventory {
 
-    private final String sensor;
     private final StreamFactory streamFactory;
     private final boolean indexOnly;
     private final String product_ListFilename;
@@ -37,27 +34,35 @@ public class CoverageInventory implements Inventory {
 
     private CoverageIndex index;
 
-
-    public CoverageInventory(String sensor, StreamFactory streamFactory, boolean indexOnly) {
-        this.sensor = sensor;
+    public NgInventory(String sensor, StreamFactory streamFactory, boolean indexOnly) {
         this.streamFactory = streamFactory;
         this.indexOnly = indexOnly;
+        int maxLevel = 3;
         product_ListFilename = sensor + "_products_list.csv";
-        indexFilename = "cov/" + sensor + ".index";
-        dataFilename = "cov/" + sensor + ".data";
+        indexFilename = "ng/" + sensor + "_l" + maxLevel + ".index";
+        dataFilename = "ng/" + sensor + "_l" + maxLevel + ".data";
     }
 
     @Override
     public int createIndex() throws IOException {
+        IndexCreator indexCreator = new IndexCreator(3);
         try (InputStream inputStream = streamFactory.createInputStream(product_ListFilename)) {
-            List<CsvRecord> csvRecordList = CsvRecordReader.readAllRecords(inputStream);
-
-            OutputStream indexOS = streamFactory.createOutputStream(indexFilename);
-            OutputStream dataOS = streamFactory.createOutputStream(dataFilename);
-            CoverageIndex.create(csvRecordList, indexOS, dataOS);
-
-            return csvRecordList.size();
+            CsvRecordReader.CsvRecordIterator csvRecordIterator = CsvRecordReader.getIterator(inputStream);
+            while (csvRecordIterator.hasNext()) {
+                CsvRecord r = csvRecordIterator.next();
+                if (r != null) {
+                    indexCreator.addToIndex(r.getPath(), r.getStartTime(), r.getEndTime(), r.getS2Polygon());
+                }
+            }
+            indexCreator.debug();
         }
+
+        OutputStream indexOS = streamFactory.createOutputStream(indexFilename);
+        OutputStream dataOS = streamFactory.createOutputStream(dataFilename);
+        List<IndexCreator.IndexRecord> indexRecords = indexCreator.indexRecords;
+        Collections.sort(indexRecords, (r1, r2) -> Long.compare(r1.startTime, r2.startTime));
+        CoverageIndex.write(indexRecords, indexCreator.coverages, indexOS, dataOS);
+        return indexRecords.size();
     }
 
 
@@ -156,12 +161,7 @@ public class CoverageInventory implements Inventory {
                     }
                 } else if (polygon != null) {
                     if (polygonIntIds == null) {
-                        S2RegionCoverer coverer = new S2RegionCoverer();
-                        coverer.setMinLevel(0);
-                        coverer.setMaxLevel(3);
-                        coverer.setMaxCells(500);
-                        S2CellUnion cellUnion = coverer.getCovering(polygon);
-                        polygonIntIds = S2Integer.convertCellUnion(cellUnion);
+                        polygonIntIds = S2Integer.createS2IntIds(polygon, 3);
                     }
                     if (S2Integer.intersectsCellUnionFast(polygonIntIds, index.allCoverages[record.coverageIndex])) {
                         results.add(productIndex);

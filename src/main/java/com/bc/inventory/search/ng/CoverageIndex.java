@@ -1,10 +1,6 @@
-package com.bc.inventory.search.coverage;
+package com.bc.inventory.search.ng;
 
-import com.bc.inventory.search.csv.CsvRecord;
 import com.bc.inventory.utils.S2Integer;
-import com.google.common.geometry.S2CellId;
-import com.google.common.geometry.S2CellUnion;
-import com.google.common.geometry.S2RegionCoverer;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -13,8 +9,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -25,29 +19,20 @@ class CoverageIndex {
     IndexRecord[] records;
     int[][] allCoverages;
 
-
-    public static void create(List<CsvRecord> csvRecordList, OutputStream indexOS, OutputStream dataOS) throws IOException {
-        List<S2Integer.Coverage> allCoverages = new ArrayList<>();
+    public static void write(List<IndexCreator.IndexRecord> recordList, List<S2Integer.Coverage> coverages, OutputStream indexOS, OutputStream dataOS) throws IOException {
         try (
                 DataOutputStream dosIndex = new DataOutputStream(new BufferedOutputStream(indexOS));
                 DataFile.Writer dataWriter = new DataFile.Writer(dataOS);
         ) {
             int counter = 0;
-            dosIndex.writeInt(csvRecordList.size());
+            dosIndex.writeInt(recordList.size());
 
-            for (CsvRecord csvRecord : csvRecordList) {
-                dosIndex.writeLong(csvRecord.getStartTime());
-                dosIndex.writeLong(csvRecord.getEndTime());
+            for (IndexCreator.IndexRecord record : recordList) {
+                dosIndex.writeLong(record.startTime);
+                dosIndex.writeLong(record.endTime);
+                dosIndex.writeInt(record.coverageId);
 
-                S2Integer.Coverage s2IntCoverage = S2Integer.createS2IntCoverage(csvRecord.getS2Polygon(), 3);
-                int index = allCoverages.indexOf(s2IntCoverage);
-                if (index <= 0) {
-                    allCoverages.add(s2IntCoverage);
-                    index = allCoverages.size() - 1;
-                }
-                dosIndex.writeInt(index);
-
-                int dataOffset = dataWriter.writeRecord(csvRecord.getS2Polygon(), csvRecord.getPath());
+                int dataOffset = dataWriter.writeRecord(record.polygonBytes, record.path);
                 dosIndex.writeInt(dataOffset);
 
                 counter++;
@@ -55,8 +40,8 @@ class CoverageIndex {
                     System.out.println("counter = " + counter);
                 }
             }
-            dosIndex.writeInt(allCoverages.size());
-            for (S2Integer.Coverage s2Cover : allCoverages) {
+            dosIndex.writeInt(coverages.size());
+            for (S2Integer.Coverage s2Cover : coverages) {
                 int[] intIds = s2Cover.intIds;
                 dosIndex.writeInt(intIds.length);
                 for (int intId : intIds) {
@@ -90,7 +75,6 @@ class CoverageIndex {
                 }
             }
         }
-        Arrays.sort(records, (r1, r2) -> Long.compare(r1.startTime, r2.startTime));
     }
 
     public int getIndexForTime(long startTime) {
