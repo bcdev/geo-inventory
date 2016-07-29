@@ -58,16 +58,24 @@ public class Benchmark {
 //        testQueries("CsvFast", test, new CsvFastInventory(ds, streamFactory));
 
 //        testIndexCreation("Coverage", test, new CoverageInventory(ds, streamFactory, false));
-        testQueries("Coverage1", test, new CoverageInventory(ds, streamFactory, false));
-        testQueries("Coverage2", test, new CoverageInventory(ds, streamFactory, false));
-        testQueries("Coverage3", test, new CoverageInventory(ds, streamFactory, false));
-        testQueries("CovIndex", test, new CoverageInventory(ds, streamFactory, true));
+//        testQueries("Coverage1", test, new CoverageInventory(ds, streamFactory, false));
+//        testQueries("Coverage2", test, new CoverageInventory(ds, streamFactory, false));
+//        testQueries("Coverage3", test, new CoverageInventory(ds, streamFactory, false));
+//        testQueries("CovIndex", test, new CoverageInventory(ds, streamFactory, true));
 
-//        testIndexCreation("Ng", test, new NgInventory(ds, streamFactory, false));
-        testQueries("Ng1", test, new NgInventory(ds, streamFactory, false));
-        testQueries("Ng2", test, new NgInventory(ds, streamFactory, false));
-        testQueries("Ng3", test, new NgInventory(ds, streamFactory, false));
-        testQueries("NgIndex", test, new NgInventory(ds, streamFactory, true));
+//        testIndexCreation("Ng2", test, new NgInventory(ds, streamFactory, false, 2));
+//        testIndexCreation("Ng3", test, new NgInventory(ds, streamFactory, false, 3));
+//        testIndexCreation("Ng4", test, new NgInventory(ds, streamFactory, false, 4));
+//        testQueries("Ng2", test, new NgInventory(ds, streamFactory, false, 2));
+        testQueries("Ng3.1", test, new NgInventory(ds, streamFactory, false, 3));
+//        testQueries("Ng3.2", test, new NgInventory(ds, streamFactory, false, 3));
+//        testQueries("Ng3.3", test, new NgInventory(ds, streamFactory, false, 3));
+        testQueries("NgIndex3", test, new NgInventory(ds, streamFactory, true, 3));
+        testQueries("Ng4.1", test, new NgInventory(ds, streamFactory, false, 4));
+//        testQueries("Ng4.2", test, new NgInventory(ds, streamFactory, false, 4));
+//        testQueries("Ng4.3", test, new NgInventory(ds, streamFactory, false, 4));
+//        testQueries("NgIndex2", test, new NgInventory(ds, streamFactory, true, 2));
+        testQueries("NgIndex4", test, new NgInventory(ds, streamFactory, true, 4));
 
         test.printMeasurements();
     }

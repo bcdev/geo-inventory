@@ -8,16 +8,21 @@ import java.io.InputStream;
  */
 class CoverageIndex {
 
-    private final IndexRecord[] records;
+    private final int[] startTimes;
+    private final int[] endTimes;
+    private final int[] coverageIndices;
+    private final int[] dataOffsets;
     private final int[][] coverages;
 
     CoverageIndex(InputStream indexIS) throws IOException {
         try (IndexFile.Reader indexFile = new IndexFile.Reader(indexIS)) {
-            records = new IndexRecord[indexFile.readNumRecords()];
-            for (int i = 0; i < records.length; i++) {
-                records[i] = indexFile.readIndexRecord();
-            }
-            coverages = new int[indexFile.readNumRecords()][0];
+            int numRecords = indexFile.readNumRecords();
+            startTimes = indexFile.readIntArray(numRecords);
+            endTimes = indexFile.readIntArray(numRecords);
+            coverageIndices = indexFile.readIntArray(numRecords);
+            dataOffsets = indexFile.readIntArray(numRecords);
+
+            coverages = new int[indexFile.readNumCoverages()][0];
             for (int i = 0; i < coverages.length; i++) {
                 coverages[i] = indexFile.readCoverage();
             }
@@ -25,49 +30,43 @@ class CoverageIndex {
     }
 
     int size() {
-        return records.length;
+        return startTimes.length;
     }
 
-    CoverageIndex.IndexRecord getRecord(int index) {
-        return records[index];
+    int getStartTime(int index) {
+        return startTimes[index];
+    }
+
+    int getEndTime(int index) {
+        return endTimes[index];
+    }
+
+    int getDataOffset(int index) {
+        return dataOffsets[index];
     }
 
     int[] getCoverage(int index) {
-        return coverages[index];
+        return coverages[coverageIndices[index]];
     }
 
-    int getIndexForTime(int startTime) {
-        return indexedBinarySearch(records, startTime);
+    int getIndexForTime(int currentStartTime) {
+        return indexedBinarySearch(startTimes, currentStartTime);
     }
 
-    private static int indexedBinarySearch(IndexRecord[] records, int startTime) {
+    private static int indexedBinarySearch(int[] startTimes, int currentStartTime) {
         int low = 0;
-        int high = records.length - 1;
+        int high = startTimes.length - 1;
         while (low <= high) {
             int mid = (low + high) >>> 1;
-            final int t1 = records[mid].startTime;
-            if (t1 < startTime) {
+            final int t1 = startTimes[mid];
+            if (t1 < currentStartTime) {
                 low = mid + 1;
-            } else if (t1 == startTime) {
+            } else if (t1 == currentStartTime) {
                 return mid; // key found
             } else {
                 high = mid - 1;
             }
         }
         return low == 0 ? low : low - 1;  // key not found
-    }
-
-    static class IndexRecord {
-        final int startTime;
-        final int endTime;
-        final int coverageIndex;
-        final int dataOffset;
-
-        IndexRecord(int startTime, int endTime, int coverageIndex, int dataOffset) {
-            this.startTime = startTime;
-            this.endTime = endTime;
-            this.coverageIndex = coverageIndex;
-            this.dataOffset = dataOffset;
-        }
     }
 }

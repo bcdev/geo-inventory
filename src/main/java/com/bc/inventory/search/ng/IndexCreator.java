@@ -64,14 +64,8 @@ class IndexCreator {
             }
         }
         try (IndexFile.Writer indexWriter = new IndexFile.Writer(indexOS)) {
-            indexWriter.writeNumRecords(indexRecords.size());
-            for (IndexCreator.IndexRecord record : indexRecords) {
-                indexWriter.writeRecord(record.startTime, record.endTime, record.coverageId, record.dataOffset);
-            }
-            indexWriter.writeNumRecords(coverages.size());
-            for (S2Integer.Coverage s2Cover : coverages) {
-                indexWriter.writeCoverage(s2Cover.intIds);
-            }
+            indexWriter.writeRecords(indexRecords);
+            indexWriter.writeCoverages(coverages);
         }
     }
 
@@ -79,7 +73,7 @@ class IndexCreator {
         return indexRecords.size();
     }
 
-    private static class IndexRecord {
+    static class IndexRecord {
         final String path;
         final int startTime;
         final int endTime;

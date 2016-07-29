@@ -31,13 +31,14 @@ public class NgInventory implements Inventory {
     private final String product_ListFilename;
     private final String indexFilename;
     private final String dataFilename;
+    private final int maxLevel;
 
     private CoverageIndex index;
 
-    public NgInventory(String sensor, StreamFactory streamFactory, boolean indexOnly) {
+    public NgInventory(String sensor, StreamFactory streamFactory, boolean indexOnly, int maxLevel) {
         this.streamFactory = streamFactory;
         this.indexOnly = indexOnly;
-        int maxLevel = 3;
+        this.maxLevel = maxLevel;
         product_ListFilename = sensor + "_products_list.csv";
         indexFilename = "ng/" + sensor + "_l" + maxLevel + ".index";
         dataFilename = "ng/" + sensor + "_l" + maxLevel + ".data";
@@ -45,7 +46,7 @@ public class NgInventory implements Inventory {
 
     @Override
     public int createIndex() throws IOException {
-        IndexCreator indexCreator = new IndexCreator(3);
+        IndexCreator indexCreator = new IndexCreator(maxLevel);
         try (InputStream inputStream = streamFactory.createInputStream(product_ListFilename)) {
             CsvRecordReader.CsvRecordIterator csvRecordIterator = CsvRecordReader.getIterator(inputStream);
             while (csvRecordIterator.hasNext()) {
@@ -133,16 +134,11 @@ public class NgInventory implements Inventory {
 
         boolean finishedWithInsitu = false;
         while (!finishedWithInsitu) {
-            CoverageIndex.IndexRecord record = null;
-            if (productIndex < index.size()) {
-                record = index.getRecord(productIndex);
-            }
-
-            if (record == null) {
+            if (productIndex >= index.size()) {
                 finishedWithInsitu = true;
-            } else if (endTime != -1 && record.startTime > endTime) {
+            } else if (endTime != -1 && index.getStartTime(productIndex) > endTime) {
                 finishedWithInsitu = true;
-            } else if (startTime != -1 && record.endTime < startTime) {
+            } else if (startTime != -1 && index.getEndTime(productIndex) < startTime) {
                 //test next product;
             } else {
                 // time matches, now test geo
@@ -150,15 +146,15 @@ public class NgInventory implements Inventory {
                     if (s2CellId == null) {
                         s2CellId = S2CellId.fromPoint(point);
                     }
-                    int[] coverage = index.getCoverage(record.coverageIndex);
+                    int[] coverage = index.getCoverage(productIndex);
                     if (S2Integer.containsCellId(coverage, s2CellId)) {
                         results.add(productIndex);
                     }
                 } else if (polygon != null) {
                     if (polygonIntIds == null) {
-                        polygonIntIds = S2Integer.createS2IntIds(polygon, 3);
+                        polygonIntIds = S2Integer.createS2IntIds(polygon, maxLevel);
                     }
-                    if (S2Integer.intersectsCellUnionFast(polygonIntIds, index.getCoverage(record.coverageIndex))) {
+                    if (S2Integer.intersectsCellUnionFast(polygonIntIds, index.getCoverage(productIndex))) {
                         results.add(productIndex);
                     }
                 }
@@ -169,15 +165,13 @@ public class NgInventory implements Inventory {
     }
 
     private Collection<String> testPolygonOnData(List<Integer> uniqueProductList, S2Polygon searchPolygon) {
-        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(index.getRecord(o1).dataOffset, index.getRecord(o2).dataOffset));
+        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(index.getDataOffset(o1), index.getDataOffset(o2)));
         List<String> matches = new ArrayList<>();
         try (
                 DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(dataFilename))
         ) {
             for (Integer productID : uniqueProductList) {
-                CoverageIndex.IndexRecord record = index.getRecord(productID);
-
-                reader.seekTo(record.dataOffset);
+                reader.seekTo(index.getDataOffset(productID));
                 if (reader.readPolygon().intersects(searchPolygon)) {
                     matches.add(reader.readPath());
                 }
@@ -191,15 +185,14 @@ public class NgInventory implements Inventory {
     private List<String> testPointsOnData(Map<Integer, List<S2Point>> candidatesMap) {
 
         List<Integer> uniqueProductList = new ArrayList<>(candidatesMap.keySet());
-        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(index.getRecord(o1).dataOffset, index.getRecord(o2).dataOffset));
+        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(index.getDataOffset(o1), index.getDataOffset(o2)));
 
         List<String> matches = new ArrayList<>();
         try (
                 DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(dataFilename))
         ) {
             for (Integer productID : uniqueProductList) {
-                CoverageIndex.IndexRecord record = index.getRecord(productID);
-                reader.seekTo(record.dataOffset);
+                reader.seekTo(index.getDataOffset(productID));
 
                 S2Polygon productPolygon = reader.readPolygon();
                 List<S2Point> s2Points = candidatesMap.get(productID);
