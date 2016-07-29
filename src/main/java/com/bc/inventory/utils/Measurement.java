@@ -19,7 +19,7 @@ public class Measurement implements AutoCloseable {
         this.engine = engine;
         this.measurementTable = measurementTable;
         this.startTime = System.currentTimeMillis();
-        System.out.println("performing: " + testName + " on " + engine);
+//        System.out.println("performing: " + testName + " on " + engine);
     }
 
     public void setNumProducts(int numProducts) {

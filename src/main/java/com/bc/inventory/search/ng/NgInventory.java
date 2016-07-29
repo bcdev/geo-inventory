@@ -54,30 +54,25 @@ public class NgInventory implements Inventory {
                     indexCreator.addToIndex(r.getPath(), r.getStartTime(), r.getEndTime(), r.getS2Polygon());
                 }
             }
-            indexCreator.debug();
         }
-
-        OutputStream indexOS = streamFactory.createOutputStream(indexFilename);
-        OutputStream dataOS = streamFactory.createOutputStream(dataFilename);
-        List<IndexCreator.IndexRecord> indexRecords = indexCreator.indexRecords;
-        Collections.sort(indexRecords, (r1, r2) -> Long.compare(r1.startTime, r2.startTime));
-        CoverageIndex.write(indexRecords, indexCreator.coverages, indexOS, dataOS);
-        return indexRecords.size();
+        try (OutputStream indexOS = streamFactory.createOutputStream(indexFilename);
+             OutputStream dataOS = streamFactory.createOutputStream(dataFilename)) {
+            indexCreator.write(indexOS, dataOS);
+        }
+        return indexCreator.size();
     }
-
 
     @Override
     public int loadIndex() throws IOException {
-        index = new CoverageIndex();
-        index.load(streamFactory.createInputStream(indexFilename));
-        return index.records.length;
+        index = new CoverageIndex(streamFactory.createInputStream(indexFilename));
+        return index.size();
     }
 
     @Override
     public Collection<String> query(Constrain constrain) {
         List<SimpleRecord> insitu = constrain.getInsitu();
-        long start = constrain.getStart();
-        long end = constrain.getEnd();
+        int start = IndexCreator.startTimeInMin(constrain.getStart());
+        int end = IndexCreator.endTimeInMin(constrain.getEnd());
         S2Polygon polygon = constrain.getPolygon();
 
         if (insitu == null) {
@@ -98,8 +93,8 @@ public class NgInventory implements Inventory {
             for (SimpleRecord insituRecord : insitu) {
                 long delta = constrain.getDelta();
                 if (delta != -1) {
-                    start = insituRecord.getTime() - delta;
-                    end = insituRecord.getTime() + delta;
+                    start = IndexCreator.startTimeInMin(insituRecord.getTime() - delta);
+                    end = IndexCreator.endTimeInMin(insituRecord.getTime() + delta);
                 }
                 S2Point s2Point = insituRecord.getAsPoint();
                 List<Integer> productIDs = testOnIndex(start, end, s2Point, null);
@@ -127,7 +122,7 @@ public class NgInventory implements Inventory {
         }
     }
 
-    private List<Integer> testOnIndex(long startTime, long endTime, S2Point point, S2Polygon polygon) {
+    private List<Integer> testOnIndex(int startTime, int endTime, S2Point point, S2Polygon polygon) {
         S2CellId s2CellId = null;
         int[] polygonIntIds = null;
         List<Integer> results = new ArrayList<>();
@@ -139,8 +134,8 @@ public class NgInventory implements Inventory {
         boolean finishedWithInsitu = false;
         while (!finishedWithInsitu) {
             CoverageIndex.IndexRecord record = null;
-            if (productIndex < index.records.length) {
-                record = index.records[productIndex];
+            if (productIndex < index.size()) {
+                record = index.getRecord(productIndex);
             }
 
             if (record == null) {
@@ -155,7 +150,7 @@ public class NgInventory implements Inventory {
                     if (s2CellId == null) {
                         s2CellId = S2CellId.fromPoint(point);
                     }
-                    int[] coverage = index.allCoverages[record.coverageIndex];
+                    int[] coverage = index.getCoverage(record.coverageIndex);
                     if (S2Integer.containsCellId(coverage, s2CellId)) {
                         results.add(productIndex);
                     }
@@ -163,7 +158,7 @@ public class NgInventory implements Inventory {
                     if (polygonIntIds == null) {
                         polygonIntIds = S2Integer.createS2IntIds(polygon, 3);
                     }
-                    if (S2Integer.intersectsCellUnionFast(polygonIntIds, index.allCoverages[record.coverageIndex])) {
+                    if (S2Integer.intersectsCellUnionFast(polygonIntIds, index.getCoverage(record.coverageIndex))) {
                         results.add(productIndex);
                     }
                 }
@@ -174,13 +169,13 @@ public class NgInventory implements Inventory {
     }
 
     private Collection<String> testPolygonOnData(List<Integer> uniqueProductList, S2Polygon searchPolygon) {
-        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(index.records[o1].dataOffset, index.records[o2].dataOffset));
+        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(index.getRecord(o1).dataOffset, index.getRecord(o2).dataOffset));
         List<String> matches = new ArrayList<>();
         try (
                 DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(dataFilename))
         ) {
             for (Integer productID : uniqueProductList) {
-                CoverageIndex.IndexRecord record = index.records[productID];
+                CoverageIndex.IndexRecord record = index.getRecord(productID);
 
                 reader.seekTo(record.dataOffset);
                 if (reader.readPolygon().intersects(searchPolygon)) {
@@ -196,14 +191,14 @@ public class NgInventory implements Inventory {
     private List<String> testPointsOnData(Map<Integer, List<S2Point>> candidatesMap) {
 
         List<Integer> uniqueProductList = new ArrayList<>(candidatesMap.keySet());
-        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(index.records[o1].dataOffset, index.records[o2].dataOffset));
+        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(index.getRecord(o1).dataOffset, index.getRecord(o2).dataOffset));
 
         List<String> matches = new ArrayList<>();
         try (
                 DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(dataFilename))
         ) {
             for (Integer productID : uniqueProductList) {
-                CoverageIndex.IndexRecord record = index.records[productID];
+                CoverageIndex.IndexRecord record = index.getRecord(productID);
                 reader.seekTo(record.dataOffset);
 
                 S2Polygon productPolygon = reader.readPolygon();

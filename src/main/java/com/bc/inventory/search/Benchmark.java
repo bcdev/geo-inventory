@@ -58,11 +58,15 @@ public class Benchmark {
 //        testQueries("CsvFast", test, new CsvFastInventory(ds, streamFactory));
 
 //        testIndexCreation("Coverage", test, new CoverageInventory(ds, streamFactory, false));
-        testQueries("Coverage", test, new CoverageInventory(ds, streamFactory, false));
+        testQueries("Coverage1", test, new CoverageInventory(ds, streamFactory, false));
+        testQueries("Coverage2", test, new CoverageInventory(ds, streamFactory, false));
+        testQueries("Coverage3", test, new CoverageInventory(ds, streamFactory, false));
         testQueries("CovIndex", test, new CoverageInventory(ds, streamFactory, true));
 
 //        testIndexCreation("Ng", test, new NgInventory(ds, streamFactory, false));
-        testQueries("Ng", test, new NgInventory(ds, streamFactory, false));
+        testQueries("Ng1", test, new NgInventory(ds, streamFactory, false));
+        testQueries("Ng2", test, new NgInventory(ds, streamFactory, false));
+        testQueries("Ng3", test, new NgInventory(ds, streamFactory, false));
         testQueries("NgIndex", test, new NgInventory(ds, streamFactory, true));
 
         test.printMeasurements();
@@ -101,7 +105,7 @@ public class Benchmark {
         Constrain c7 = new Constrain("extracts 3 lat/lon, 1 year").withInsitu(latLon).withStart("2005-01-01").witthEnd("2006-01-01");
         Constrain c8 = new Constrain("1 year").withStart("2005-01-01").witthEnd("2006-01-01");
         return Arrays.asList(c1, c2, c3, c4, c5, c6, c7, c8);
-//        return Arrays.asList();
+//        return Arrays.asList(c1,c2,c3,c4,c5);
     }
 
     static List<SimpleRecord> readInsituRecords(File file) throws Exception {
