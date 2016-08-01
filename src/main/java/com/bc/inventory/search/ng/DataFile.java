@@ -9,12 +9,9 @@ import com.google.common.geometry.S2Polygon;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -155,64 +152,5 @@ class DataFile {
         S2Loop loop = new S2Loop(vertices, bound, firstLogicalVertex, originInside);
 
         return new S2Polygon(loop);
-    }
-
-    static class Reader2 implements AutoCloseable {
-
-        private final DataInputStream dis;
-        private final int size;
-        private int pos;
-        private byte[] byteBuffer;
-        private DataInput bb;
-
-        Reader2(InputStream is) throws IOException {
-            size = (int) ((FileInputStream) is).getChannel().size();
-            dis = new DataInputStream(new BufferedInputStream(is));
-            pos = 0;
-        }
-
-        void seekTo(int dataOffset, int length) throws IOException {
-            if (length == -1) {
-                length = size - dataOffset;
-            }
-            dis.skipBytes(dataOffset - pos);
-            byteBuffer = new byte[length];
-            dis.readFully(byteBuffer);
-            bb = new DataInputStream(new ByteArrayInputStream(byteBuffer));
-            pos = dataOffset + length;
-        }
-
-        S2Polygon readPolygon() throws IOException {
-            final int numLoopPoints = bb.readInt();
-            S2Point[] vertices = new S2Point[numLoopPoints];
-            for (int i = 0; i < numLoopPoints; i++) {
-                double x = bb.readDouble();
-                double y = bb.readDouble();
-                double z = bb.readDouble();
-                vertices[i] = new S2Point(x, y, z);
-            }
-            double latLo = bb.readDouble();
-            double latHi = bb.readDouble();
-            double lngLo = bb.readDouble();
-            double lngHi = bb.readDouble();
-            R1Interval lat = new R1Interval(latLo, latHi);
-            S1Interval lng = new S1Interval(lngLo, lngHi);
-            S2LatLngRect bound = new S2LatLngRect(lat, lng);
-
-            int firstLogicalVertex = bb.readInt();
-            boolean originInside = bb.readBoolean();
-            S2Loop loop = new S2Loop(vertices, bound, firstLogicalVertex, originInside);
-
-            return new S2Polygon(loop);
-        }
-
-        String readPath() throws IOException {
-            return bb.readUTF();
-        }
-
-        @Override
-        public void close() throws IOException {
-            dis.close();
-        }
     }
 }
