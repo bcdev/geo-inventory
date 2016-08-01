@@ -67,11 +67,23 @@ class DataFile {
             hasReadPolygon = false;
         }
 
+        byte[] readPolygonBytes() throws IOException {
+            dis.mark(4);
+            final int numLoopPoints = dis.readInt();
+            dis.reset();
+            final int numLoopBytes = numLoopPoints * 3 * 8 + 4 * 8 + 4 + 1;
+            final byte[] polygonBytes = new byte[4 + numLoopBytes];
+            dis.readFully(polygonBytes);
+            pos += 4 + numLoopBytes;
+            hasReadPolygon = true;
+            return polygonBytes;
+        }
+
         S2Polygon readPolygon() throws IOException {
             final int numLoopPoints = dis.readInt();
             final int numLoopBytes = numLoopPoints * 3 * 8 + 4 * 8 + 4 + 1;
             final byte[] loopBytes = new byte[numLoopBytes];
-            dis.readFully(loopBytes, 0, numLoopBytes);
+            dis.readFully(loopBytes);
             pos += 4 + numLoopBytes;
             hasReadPolygon = true;
             return createS2Polygon(loopBytes, numLoopPoints);

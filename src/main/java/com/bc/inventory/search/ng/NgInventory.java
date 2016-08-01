@@ -48,12 +48,10 @@ public class NgInventory implements Inventory {
     public int createIndex() throws IOException {
         IndexCreator indexCreator = new IndexCreator(maxLevel);
         try (InputStream inputStream = streamFactory.createInputStream(product_ListFilename)) {
-            CsvRecordReader.CsvRecordIterator csvRecordIterator = CsvRecordReader.getIterator(inputStream);
-            while (csvRecordIterator.hasNext()) {
-                CsvRecord r = csvRecordIterator.next();
-                if (r != null) {
-                    indexCreator.addToIndex(r.getPath(), r.getStartTime(), r.getEndTime(), r.getS2Polygon());
-                }
+            CsvRecordReader.CsvRecordIterator iterator = CsvRecordReader.getIterator(inputStream);
+            while (iterator.hasNext()) {
+                CsvRecord r = iterator.next();
+                indexCreator.addToIndex(r.getPath(), r.getStartTime(), r.getEndTime(), r.getS2Polygon());
             }
         }
         try (OutputStream indexOS = streamFactory.createOutputStream(indexFilename);
@@ -126,7 +124,7 @@ public class NgInventory implements Inventory {
         List<Integer> results = new ArrayList<>();
         int productIndex = index.getIndexForTime(startTime);
         if (productIndex == -1) {
-            return Collections.EMPTY_LIST;
+            return results;
         }
 
         boolean finishedWithInsitu = false;
@@ -136,7 +134,7 @@ public class NgInventory implements Inventory {
             } else if (endTime != -1 && index.getStartTime(productIndex) > endTime) {
                 finishedWithInsitu = true;
             } else if (startTime != -1 && index.getEndTime(productIndex) < startTime) {
-                //test next product;
+                // this product end too early, but maybe the next will be longer
             } else {
                 // time matches, now test geo
                 if (point != null) {

@@ -28,10 +28,7 @@ public class CsvRecordReader {
                 CsvRecordIterator iterator = getIterator(inputStream)
         ) {
             while (iterator.hasNext()) {
-                CsvRecord next = iterator.next();
-                if (next != null) {
-                    csvRecordList.add(next);
-                }
+                csvRecordList.add(iterator.next());
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -43,45 +40,67 @@ public class CsvRecordReader {
         return new CsvRecordIterator(inputStream);
     }
 
-    public static class CsvRecordIterator implements Iterator<CsvRecord>, AutoCloseable{
+    public static class CsvRecordIterator implements Iterator<CsvRecord>, AutoCloseable {
 
         private final BufferedReader bufferedReader;
-        private String line;
+        private boolean reachedEnd;
+        private CsvRecord record;
 
         private CsvRecordIterator(InputStream inputStream) throws IOException {
             bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-            line = bufferedReader.readLine();
+            reachedEnd = false;
+            record = null;
         }
 
         @Override
         public boolean hasNext() {
-            return line != null;
+            return record != null;
         }
 
         @Override
         public CsvRecord next() {
-            try {
-                return parseLine(line);
-            } catch (ParseException e) {
-                e.printStackTrace();
-                return null;
-            } finally {
-                try {
-                    line = bufferedReader.readLine();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    line = null;
-                }
-            }
+            CsvRecord currentRecord = record;
+            record = getNextRecord();
+            return currentRecord;
         }
 
         @Override
         public void close() throws IOException {
             bufferedReader.close();
         }
+
+        private CsvRecord getNextRecord() {
+            String line = readLineSafe();
+            while (reachedEnd) {
+                try {
+                    record = parseLine(line);
+                } catch (ParseException ignore) {
+                    ignore.printStackTrace();
+                } finally {
+                    line = readLineSafe();
+                }
+            }
+            return record;
+        }
+
+        private String readLineSafe() {
+            try {
+                String readLine = bufferedReader.readLine();
+                if (readLine == null) {
+                    record = null;
+                    reachedEnd = true;
+                }
+                return readLine;
+            } catch (IOException e) {
+                e.printStackTrace();
+                record = null;
+                reachedEnd = true;
+            }
+            return null;
+        }
     }
 
-    static CsvRecord parseLine(String line) throws ParseException {
+    private static CsvRecord parseLine(String line) throws ParseException {
         if (line == null || line.isEmpty()) {
             return null;
         }
@@ -94,11 +113,11 @@ public class CsvRecordReader {
         );
     }
 
-    static long parseDateTime(String split) throws ParseException {
+    private static long parseDateTime(String split) throws ParseException {
         return DATE_FORMAT.parse(DateUtils.getNoFractionString(split)).getTime();
     }
 
-    static S2Polygon parsePolygon(String wkt) {
+    private static S2Polygon parsePolygon(String wkt) {
         return (S2Polygon) WKT_READER.read(wkt);
     }
 }
