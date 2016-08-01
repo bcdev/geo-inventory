@@ -3,9 +3,6 @@ package com.bc.inventory.search;
 import com.bc.geometry.s2.S2WKTReader;
 import com.bc.inventory.insitu.CsvRecordSource;
 import com.bc.inventory.insitu.Record;
-import com.bc.inventory.search.coverage.CoverageInventory;
-import com.bc.inventory.search.csv.CsvFastInventory;
-import com.bc.inventory.search.csv.CsvInventory;
 import com.bc.inventory.search.ng.NgInventory;
 import com.bc.inventory.utils.Measurement;
 import com.bc.inventory.utils.MeasurementTable;
@@ -21,8 +18,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-
-import static javafx.scene.input.KeyCode.M;
 
 /**
  * A benchmark for comparing different geo inventory solutions.
@@ -48,7 +43,7 @@ public class Benchmark {
 
 //        measure(streamFactory, "test");
         measure(streamFactory, "meris");
-        measure(streamFactory, "modis");
+//        measure(streamFactory, "modis");
     }
 
     private static void measure(StreamFactory streamFactory, String ds) throws IOException {
@@ -66,16 +61,22 @@ public class Benchmark {
 //        testIndexCreation("Ng2", test, new NgInventory(ds, streamFactory, false, 2));
 //        testIndexCreation("Ng3", test, new NgInventory(ds, streamFactory, false, 3));
 //        testIndexCreation("Ng4", test, new NgInventory(ds, streamFactory, false, 4));
-//        testQueries("Ng2", test, new NgInventory(ds, streamFactory, false, 2));
-        testQueries("Ng3.1", test, new NgInventory(ds, streamFactory, false, 3));
-//        testQueries("Ng3.2", test, new NgInventory(ds, streamFactory, false, 3));
-//        testQueries("Ng3.3", test, new NgInventory(ds, streamFactory, false, 3));
-        testQueries("NgIndex3", test, new NgInventory(ds, streamFactory, true, 3));
-        testQueries("Ng4.1", test, new NgInventory(ds, streamFactory, false, 4));
-//        testQueries("Ng4.2", test, new NgInventory(ds, streamFactory, false, 4));
-//        testQueries("Ng4.3", test, new NgInventory(ds, streamFactory, false, 4));
-//        testQueries("NgIndex2", test, new NgInventory(ds, streamFactory, true, 2));
-        testQueries("NgIndex4", test, new NgInventory(ds, streamFactory, true, 4));
+//        testIndexCreation("Ng5", test, new NgInventory(ds, streamFactory, false, 5));
+
+//        testQueries("NgI2", test, new NgInventory(ds, streamFactory, true, 2));
+        testQueries("Ng2.0", test, new NgInventory(ds, streamFactory, false, 2));
+        testQueries("Ng2.1", test, new NgInventory(ds, streamFactory, false, 2));
+
+        testQueries("Ng3", test, new NgInventory(ds, streamFactory, false, 3));
+
+        testQueries("Ng4", test, new NgInventory(ds, streamFactory, false, 4));
+//        testQueries("NgI4", test, new NgInventory(ds, streamFactory, true, 4));
+
+//        testQueries("NgI3", test, new NgInventory(ds, streamFactory, true, 3));
+
+//        testQueries("NgI5", test, new NgInventory(ds, streamFactory, true, 5));
+//        testQueries("Ng5", test, new NgInventory(ds, streamFactory, false, 5));
+
 
         test.printMeasurements();
     }
@@ -105,15 +106,16 @@ public class Benchmark {
         List<SimpleRecord> latLon = readInsituRecords(new File(baseDir, "extracts.csv"));
 
         Constrain c1 = new Constrain("northsea").withPolygon(northseaPoly);
-        Constrain c2 = new Constrain("northsea, 1 year").withPolygon(northseaPoly).withStart("2005-01-01").witthEnd("2006-01-01");
-        Constrain c3 = new Constrain("northsea, 1 week").withPolygon(northseaPoly).withStart("2005-06-01").witthEnd("2005-06-07");
-        Constrain c4 = new Constrain("northsea, 1 day").withPolygon(northseaPoly).withStart("2005-06-01").witthEnd("2005-06-02");
+        Constrain c2 = new Constrain("northsea, 1 year").withPolygon(northseaPoly).withStartTime("2005-01-01").withEndTime("2006-01-01");
+        Constrain c3 = new Constrain("northsea, 1 week").withPolygon(northseaPoly).withStartTime("2005-06-01").withEndTime("2005-06-07");
+        Constrain c4 = new Constrain("northsea, 1 day").withPolygon(northseaPoly).withStartTime("2005-06-01").withEndTime("2005-06-02");
         Constrain c5 = new Constrain("matchups 30k lat/lon/time").withInsitu(latLonTime).withDeltaTime(HOURS_IN_MILLIS * 3);
         Constrain c6 = new Constrain("extracts 3 lat/lon").withInsitu(latLon);
-        Constrain c7 = new Constrain("extracts 3 lat/lon, 1 year").withInsitu(latLon).withStart("2005-01-01").witthEnd("2006-01-01");
-        Constrain c8 = new Constrain("1 year").withStart("2005-01-01").witthEnd("2006-01-01");
-        return Arrays.asList(c1, c2, c3, c4, c5, c6, c7, c8);
-//        return Arrays.asList(c1,c2,c3,c4,c5);
+        Constrain c7 = new Constrain("extracts 3 lat/lon, 100#").withInsitu(latLon).withNumResults(100);
+        Constrain c8 = new Constrain("extracts 3 lat/lon, 1 year").withInsitu(latLon).withStartTime("2005-01-01").withEndTime("2006-01-01");
+        Constrain c9 = new Constrain("1 year").withStartTime("2005-01-01").withEndTime("2006-01-01");
+        Constrain c10 = new Constrain("1 year, 100#").withStartTime("2005-01-01").withEndTime("2006-01-01").withNumResults(100);
+        return Arrays.asList(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10);
     }
 
     static List<SimpleRecord> readInsituRecords(File file) throws Exception {

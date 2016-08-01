@@ -8,6 +8,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.List;
 
+
 /**
  * Search constrains
  */
@@ -20,6 +21,7 @@ public class Constrain {
     private long end = -1;
     private List<SimpleRecord> insitu;
     private long delta = -1;
+    private int numResults = Integer.MAX_VALUE;
 
     public Constrain(String name) {
         this.name = name;
@@ -33,11 +35,11 @@ public class Constrain {
         return polygon;
     }
 
-    public long getStart() {
+    public long getStartTime() {
         return start;
     }
 
-    public long getEnd() {
+    public long getEndTime() {
         return end;
     }
 
@@ -49,17 +51,21 @@ public class Constrain {
         return delta;
     }
 
+    public int getNumResults() {
+        return numResults;
+    }
+
     public Constrain withPolygon(S2Polygon polygon) {
         this.polygon = polygon;
         return this;
     }
 
-    public Constrain withStart(String start) {
+    public Constrain withStartTime(String start) {
         this.start = dateAsLong(start);
         return this;
     }
 
-    public Constrain witthEnd(String end) {
+    public Constrain withEndTime(String end) {
         this.end = dateAsLong(end);
         return this;
     }
@@ -74,7 +80,12 @@ public class Constrain {
         return this;
     }
 
-    public static long dateAsLong(String dateString) {
+    public Constrain withNumResults(int numResults) {
+        this.numResults = numResults;
+        return this;
+    }
+
+    private static long dateAsLong(String dateString) {
         if (dateString != null && !dateString.isEmpty()) {
             try {
                 return DATE_FORMAT.parse(dateString).getTime();

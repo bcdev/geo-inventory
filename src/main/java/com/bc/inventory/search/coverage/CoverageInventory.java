@@ -71,8 +71,8 @@ public class CoverageInventory implements Inventory {
     @Override
     public Collection<String> query(Constrain constrain) {
         List<SimpleRecord> insitu = constrain.getInsitu();
-        long start = constrain.getStart();
-        long end = constrain.getEnd();
+        long start = constrain.getStartTime();
+        long end = constrain.getEndTime();
         S2Polygon polygon = constrain.getPolygon();
 
         if (insitu == null) {

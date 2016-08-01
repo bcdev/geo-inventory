@@ -72,8 +72,8 @@ public class NgInventory implements Inventory {
     @Override
     public Collection<String> query(Constrain constrain) {
         List<SimpleRecord> insitu = constrain.getInsitu();
-        int start = IndexCreator.startTimeInMin(constrain.getStart());
-        int end = IndexCreator.endTimeInMin(constrain.getEnd());
+        int start = IndexCreator.startTimeInMin(constrain.getStartTime());
+        int end = IndexCreator.endTimeInMin(constrain.getEndTime());
         S2Polygon polygon = constrain.getPolygon();
 
         if (insitu == null) {
@@ -81,12 +81,9 @@ public class NgInventory implements Inventory {
             Collection<String> paths;
             productIDs = testOnIndex(start, end, null, polygon);
             if (indexOnly) {
-                paths = new ArrayList<>(productIDs.size());
-                for (Integer productID : productIDs) {
-                    paths.add("index_only:" + productID);
-                }
+                paths = testPolygonOnData(productIDs, null, constrain.getNumResults());
             } else {
-                paths = testPolygonOnData(productIDs, polygon);
+                paths = testPolygonOnData(productIDs, polygon, constrain.getNumResults());
             }
             return paths;
         } else {
@@ -117,7 +114,7 @@ public class NgInventory implements Inventory {
                     paths.add("index_only:" + productID);
                 }
             } else {
-                paths = testPointsOnData(candidatesMap);
+                paths = testPointsOnData(candidatesMap, constrain.getNumResults());
             }
             return paths;
         }
@@ -166,7 +163,7 @@ public class NgInventory implements Inventory {
         return results;
     }
 
-    private Collection<String> testPolygonOnData(List<Integer> uniqueProductList, S2Polygon searchPolygon) {
+    private Collection<String> testPolygonOnData(List<Integer> uniqueProductList, S2Polygon searchPolygon, int numResults) {
         Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(index.getDataOffset(o1), index.getDataOffset(o2)));
         List<String> matches = new ArrayList<>();
         try (
@@ -176,6 +173,9 @@ public class NgInventory implements Inventory {
                 reader.seekTo(index.getDataOffset(productID));
                 if (searchPolygon == null || reader.readPolygon().intersects(searchPolygon)) {
                     matches.add(reader.readPath());
+                    if (matches.size() == numResults) {
+                        return matches;
+                    }
                 }
             }
         } catch (IOException e) {
@@ -184,7 +184,7 @@ public class NgInventory implements Inventory {
         return matches;
     }
 
-    private List<String> testPointsOnData(Map<Integer, List<S2Point>> candidatesMap) {
+    private List<String> testPointsOnData(Map<Integer, List<S2Point>> candidatesMap, int numResults) {
 
         List<Integer> uniqueProductList = new ArrayList<>(candidatesMap.keySet());
         Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(index.getDataOffset(o1), index.getDataOffset(o2)));
@@ -198,15 +198,18 @@ public class NgInventory implements Inventory {
 
                 S2Polygon productPolygon = reader.readPolygon();
                 List<S2Point> s2Points = candidatesMap.get(productID);
-                boolean readPath = false;
+                boolean pointInPolygon = false;
                 for (S2Point s2Point : s2Points) {
                     if (productPolygon.contains(s2Point)) {
-                        readPath = true;
+                        pointInPolygon = true;
                         break;
                     }
                 }
-                if (readPath) {
+                if (pointInPolygon) {
                     matches.add(reader.readPath());
+                    if (matches.size() == numResults) {
+                        return matches;
+                    }
                 }
             }
             return matches;
