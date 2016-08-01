@@ -61,24 +61,52 @@ class IndexFile {
     static class Reader implements AutoCloseable {
 
         private final DataInputStream dis;
+        private int[] startTimes;
+        private int[] endTimes;
+        private int[] coverageIndices;
+        private int[] dataOffsets;
 
         Reader(InputStream is) {
             dis = new DataInputStream(new BufferedInputStream(is));
         }
 
-        int readNumRecords() throws IOException {
-            return dis.readInt();
+        void readRecords() throws IOException {
+            int numRecords = dis.readInt();
+            startTimes = readIntArray(numRecords);
+            endTimes = readIntArray(numRecords);
+            coverageIndices = readIntArray(numRecords);
+            dataOffsets = readIntArray(numRecords);
         }
 
-        int readNumCoverages() throws IOException {
-            return dis.readInt();
+        int[] getStartTimes() {
+            return startTimes;
         }
 
-        int[] readCoverage() throws IOException {
+        int[] getEndTimes() {
+            return endTimes;
+        }
+
+        int[] getCoverageIndices() {
+            return coverageIndices;
+        }
+
+        int[] getDataOffsets() {
+            return dataOffsets;
+        }
+
+        int[][] readCoverages() throws IOException {
+            int[][] coverages = new int[dis.readInt()][0];
+            for (int i = 0; i < coverages.length; i++) {
+                coverages[i] = readCoverage();
+            }
+            return coverages;
+        }
+
+        private int[] readCoverage() throws IOException {
             return readIntArray(dis.readInt());
         }
 
-        int[] readIntArray(int numInts) throws IOException {
+        private int[] readIntArray(int numInts) throws IOException {
             ByteBuffer byteBuf = ByteBuffer.allocate(numInts * 4);
             dis.readFully(byteBuf.array());
             IntBuffer intBuf = byteBuf.asIntBuffer();

@@ -16,16 +16,12 @@ class CoverageIndex {
 
     CoverageIndex(InputStream indexIS) throws IOException {
         try (IndexFile.Reader indexFile = new IndexFile.Reader(indexIS)) {
-            int numRecords = indexFile.readNumRecords();
-            startTimes = indexFile.readIntArray(numRecords);
-            endTimes = indexFile.readIntArray(numRecords);
-            coverageIndices = indexFile.readIntArray(numRecords);
-            dataOffsets = indexFile.readIntArray(numRecords);
-
-            coverages = new int[indexFile.readNumCoverages()][0];
-            for (int i = 0; i < coverages.length; i++) {
-                coverages[i] = indexFile.readCoverage();
-            }
+            indexFile.readRecords();
+            startTimes = indexFile.getStartTimes();
+            endTimes = indexFile.getEndTimes();
+            coverageIndices = indexFile.getCoverageIndices();
+            dataOffsets = indexFile.getDataOffsets();
+            coverages = indexFile.readCoverages();
         }
     }
 
