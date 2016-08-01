@@ -2,6 +2,7 @@ package com.bc.inventory.search.csv;
 
 import com.bc.inventory.search.Constrain;
 import com.bc.inventory.search.Inventory;
+import com.bc.inventory.search.QueryResult;
 import com.bc.inventory.search.StreamFactory;
 import com.bc.inventory.utils.SimpleRecord;
 import com.google.common.geometry.S2Point;
@@ -46,14 +47,14 @@ public class CsvFastInventory implements Inventory {
     }
 
     @Override
-    public Collection<String> query(Constrain constrain) {
+    public QueryResult query(Constrain constrain) {
         List<SimpleRecord> insitu = constrain.getInsitu();
         long start = constrain.getStartTime();
         long end = constrain.getEndTime();
         S2Polygon polygon = constrain.getPolygon();
 
         if (insitu == null) {
-            return test(start, end, null, polygon);
+            return new QueryResult(test(start, end, null, polygon));
         } else {
             Set<String> results = new HashSet<>();
             for (SimpleRecord insituRecord : insitu) {
@@ -66,7 +67,7 @@ public class CsvFastInventory implements Inventory {
             }
             ArrayList<String> strings = new ArrayList<>(results);
             Collections.sort(strings);
-            return strings;
+            return new QueryResult(strings);
         }
     }
 

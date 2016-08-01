@@ -12,6 +12,6 @@ public interface Inventory {
 
     int loadIndex() throws IOException;
 
-    Collection<String> query(Constrain constrain);
+    QueryResult query(Constrain constrain);
 
 }

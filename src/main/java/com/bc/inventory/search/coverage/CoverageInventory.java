@@ -2,6 +2,7 @@ package com.bc.inventory.search.coverage;
 
 import com.bc.inventory.search.Constrain;
 import com.bc.inventory.search.Inventory;
+import com.bc.inventory.search.QueryResult;
 import com.bc.inventory.search.StreamFactory;
 import com.bc.inventory.search.csv.CsvRecord;
 import com.bc.inventory.search.csv.CsvRecordReader;
@@ -69,7 +70,7 @@ public class CoverageInventory implements Inventory {
     }
 
     @Override
-    public Collection<String> query(Constrain constrain) {
+    public QueryResult query(Constrain constrain) {
         List<SimpleRecord> insitu = constrain.getInsitu();
         long start = constrain.getStartTime();
         long end = constrain.getEndTime();
@@ -87,7 +88,7 @@ public class CoverageInventory implements Inventory {
             } else {
                 paths = testPolygonOnData(productIDs, polygon);
             }
-            return paths;
+            return new QueryResult(paths);
         } else {
             Map<Integer, List<S2Point>> candidatesMap = new HashMap<>();
             for (SimpleRecord insituRecord : insitu) {
@@ -118,7 +119,7 @@ public class CoverageInventory implements Inventory {
             } else {
                 paths = testPointsOnData(candidatesMap);
             }
-            return paths;
+            return new QueryResult(paths);
         }
     }
 
