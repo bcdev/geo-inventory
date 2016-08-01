@@ -54,6 +54,7 @@ class DataFile {
 
         private final DataInputStream dis;
         private int pos;
+        private boolean hasReadPolygon;
 
         Reader(InputStream is) {
             dis = new DataInputStream(new BufferedInputStream(is));
@@ -63,6 +64,7 @@ class DataFile {
         void seekTo(int dataOffset) throws IOException {
             dis.skipBytes(dataOffset - pos);
             pos = dataOffset;
+            hasReadPolygon = false;
         }
 
         S2Polygon readPolygon() throws IOException {
@@ -71,10 +73,17 @@ class DataFile {
             final byte[] loopBytes = new byte[numLoopBytes];
             dis.readFully(loopBytes, 0, numLoopBytes);
             pos += 4 + numLoopBytes;
+            hasReadPolygon = true;
             return createS2Polygon(loopBytes, numLoopPoints);
         }
 
         String readPath() throws IOException {
+            if (!hasReadPolygon) {
+                final int numLoopPoints = dis.readInt();
+                final int numLoopBytes = numLoopPoints * 3 * 8 + 4 * 8 + 4 + 1;
+                pos += 4 + numLoopBytes;
+                dis.skipBytes(numLoopBytes);
+            }
             String path = dis.readUTF();
             pos += path.length() + 2;
             return path;

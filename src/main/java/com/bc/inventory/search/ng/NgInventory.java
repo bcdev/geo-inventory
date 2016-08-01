@@ -83,7 +83,7 @@ public class NgInventory implements Inventory {
             if (indexOnly) {
                 paths = new ArrayList<>(productIDs.size());
                 for (Integer productID : productIDs) {
-                    paths.add(Integer.toString(productID));
+                    paths.add("index_only:" + productID);
                 }
             } else {
                 paths = testPolygonOnData(productIDs, polygon);
@@ -114,7 +114,7 @@ public class NgInventory implements Inventory {
             if (indexOnly) {
                 paths = new ArrayList<>(candidatesMap.size());
                 for (Integer productID : candidatesMap.keySet()) {
-                    paths.add(Integer.toString(productID));
+                    paths.add("index_only:" + productID);
                 }
             } else {
                 paths = testPointsOnData(candidatesMap);
@@ -157,6 +157,8 @@ public class NgInventory implements Inventory {
                     if (S2Integer.intersectsCellUnionFast(polygonIntIds, index.getCoverage(productIndex))) {
                         results.add(productIndex);
                     }
+                } else {
+                    results.add(productIndex);
                 }
             }
             productIndex++;
@@ -172,7 +174,7 @@ public class NgInventory implements Inventory {
         ) {
             for (Integer productID : uniqueProductList) {
                 reader.seekTo(index.getDataOffset(productID));
-                if (reader.readPolygon().intersects(searchPolygon)) {
+                if (searchPolygon == null || reader.readPolygon().intersects(searchPolygon)) {
                     matches.add(reader.readPath());
                 }
             }
