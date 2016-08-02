@@ -16,7 +16,6 @@ import java.io.LineNumberReader;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -24,10 +23,10 @@ import java.util.List;
  */
 public class Benchmark {
 
-    static final long HOURS_IN_MILLIS = 1000 * 60 * 60; // Note: time in ms (NOT h)
+    private static final long HOURS_IN_MILLIS = 1000 * 60 * 60; // Note: time in ms (NOT h)
 
-    static final String ACADIA_WKT = "polygon((-71.00 41.00, -52.00 41.00, -52.00 52.00, -71.00 52.00, -71.00 41.00))";
-    static final String NORTHSEA_WKT = "polygon((-19.94 40.00, -20.00 60.00, 0.0 60.00, 0.00 65.00, 13.06 65.00, 12.99 53.99, 0.00 49.22,  0.00 40.00,  -19.94 40.00))";
+    private static final String ACADIA_WKT = "polygon((-71.00 41.00, -52.00 41.00, -52.00 52.00, -71.00 52.00, -71.00 41.00))";
+    private static final String NORTHSEA_WKT = "polygon((-19.94 40.00, -20.00 60.00, 0.0 60.00, 0.00 65.00, 13.06 65.00, 12.99 53.99, 0.00 49.22,  0.00 40.00,  -19.94 40.00))";
 
     private static List<Constrain> constrains;
     private static File baseDir;
@@ -51,58 +50,49 @@ public class Benchmark {
 
     }
 
-    private static void measure(StreamFactory streamFactory, String ds) throws IOException {
-        MeasurementTable test = new MeasurementTable(ds);
+    private static void measure(StreamFactory streamFactory, String sensor) throws IOException {
+        MeasurementTable test = new MeasurementTable(sensor);
 
-//        testQueries("CSV", test, new CsvInventory(ds, streamFactory));
-//        testQueries("CsvFast", test, new CsvFastInventory(ds, streamFactory));
+//        testQueries("CSV", test, new CsvInventory(sensor, streamFactory));
+//        testQueries("CsvFast", test, new CsvFastInventory(sensor, streamFactory));
 
-//        testIndexCreation("Coverage", test, new CoverageInventory(ds, streamFactory, false));
-//        testQueries("Coverage1", test, new CoverageInventory(ds, streamFactory, false));
-//        testQueries("Coverage2", test, new CoverageInventory(ds, streamFactory, false));
-//        testQueries("Coverage3", test, new CoverageInventory(ds, streamFactory, false));
-//        testQueries("CovIndex", test, new CoverageInventory(ds, streamFactory, true));
+//        testIndexCreation("Ng2", test, sensor, new NgInventory(sensor, streamFactory, false, 2));
+//        testIndexCreation("Ng3", test, sensor, new NgInventory(sensor, streamFactory, false, 3));
+//        testIndexCreation("Ng4", test, sensor, new NgInventory(sensor, streamFactory, false, 4));
+//        testIndexCreation("Ng5", test, sensor, new NgInventory(sensor, streamFactory, false, 5));
 
-//        testIndexCreation("Ng2", test, new NgInventory(ds, streamFactory, false, 2));
-//        testIndexCreation("Ng3", test, new NgInventory(ds, streamFactory, false, 3));
-//        testIndexCreation("Ng4", test, new NgInventory(ds, streamFactory, false, 4));
-//        testIndexCreation("Ng5", test, new NgInventory(ds, streamFactory, false, 5));
+//        testQueries("NgI2", test, new NgInventory(sensor, streamFactory, true, 2));
+//        testQueries("Ng2.0", test, new NgInventory(sensor, streamFactory, false, 2));
+//        testQueries("Ng2.1", test, new NgInventory(sensor, streamFactory, false, 2));
 
-//        testQueries("NgI2", test, new NgInventory(ds, streamFactory, true, 2));
-//        testQueries("Ng2.0", test, new NgInventory(ds, streamFactory, false, 2));
-//        testQueries("Ng2.1", test, new NgInventory(ds, streamFactory, false, 2));
+        testQueries("Ng3.1", test, new NgInventory(sensor, streamFactory, false, 3));
+        testQueries("Ng3.2", test, new NgInventory(sensor, streamFactory, false, 3));
+        testQueries("Ng3.3", test, new NgInventory(sensor, streamFactory, false, 3));
+        testQueries("Ng3.4", test, new NgInventory(sensor, streamFactory, false, 3));
 
-        testQueries("Ng3.1", test, new NgInventory(ds, streamFactory, false, 3));
-        testQueries("Ng3.2", test, new NgInventory(ds, streamFactory, false, 3));
-        testQueries("Ng3.3", test, new NgInventory(ds, streamFactory, false, 3));
-        testQueries("Ng3.4", test, new NgInventory(ds, streamFactory, false, 3));
+//        testQueries("Ng4.1", test, new NgInventory(sensor, streamFactory, false, 4));
+//        testQueries("Ng4.2", test, new NgInventory(sensor, streamFactory, false, 4));
+//        testQueries("NgI4", test, new NgInventory(sensor, streamFactory, true, 4));
 
-//        testQueries("Ng4.1", test, new NgInventory(ds, streamFactory, false, 4));
-//        testQueries("Ng4.2", test, new NgInventory(ds, streamFactory, false, 4));
-//        testQueries("NgI4", test, new NgInventory(ds, streamFactory, true, 4));
-
-//        testQueries("NgI3", test, new NgInventory(ds, streamFactory, true, 3));
-
-//        testQueries("NgI5", test, new NgInventory(ds, streamFactory, true, 5));
-//        testQueries("Ng5.1", test, new NgInventory(ds, streamFactory, false, 5));
-//        testQueries("Ng5.2", test, new NgInventory(ds, streamFactory, false, 5));
-
+//        testQueries("NgI5", test, new NgInventory(sensor, streamFactory, true, 5));
+//        testQueries("Ng5.1", test, new NgInventory(sensor, streamFactory, false, 5));
+//        testQueries("Ng5.2", test, new NgInventory(sensor, streamFactory, false, 5));
 
         test.printMeasurements();
     }
 
-    private static void testIndexCreation(String engine, MeasurementTable mt, Inventory inventory) throws IOException {
-        try (Measurement m = new Measurement("create index", engine, mt)) {
-            m.setNumProducts(inventory.createIndex());
+    private static void testIndexCreation(String label, MeasurementTable mt, String sensor, Inventory inventory) throws IOException {
+        try (Measurement m = new Measurement("create index", label, mt)) {
+            m.setNumProducts(inventory.createIndex(sensor + "_products_list.csv"));
         }
     }
 
-    private static void testQueries(String engine, MeasurementTable mt, Inventory inventory) throws IOException {
-        try (Measurement m = new Measurement("load inventory", engine, mt)) {
+    private static void testQueries(String label, MeasurementTable mt, Inventory inventory) throws IOException {
+        try (Measurement m = new Measurement("load inventory", label, mt)) {
             m.setNumProducts(inventory.loadIndex());
         }
         for (Constrain constrain : constrains) {
-            try (Measurement m = new Measurement(constrain.getName(), engine, mt)) {
+            try (Measurement m = new Measurement(constrain.getQueryName(), label, mt)) {
                 QueryResult queryResult = inventory.query(constrain);
                 m.setNumProducts(queryResult.getPaths().size());
             }

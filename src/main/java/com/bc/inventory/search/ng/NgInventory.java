@@ -29,7 +29,6 @@ public class NgInventory implements Inventory {
 
     private final StreamFactory streamFactory;
     private final boolean indexOnly;
-    private final String product_ListFilename;
     private final String indexFilename;
     private final String dataFilename;
     private final int maxLevel;
@@ -40,30 +39,53 @@ public class NgInventory implements Inventory {
     private int[] dataOffsets;
     private int[][] coverages;
 
+    public NgInventory(String sensor, StreamFactory streamFactory) {
+        this(sensor, streamFactory, false, 3);
+    }
+
     public NgInventory(String sensor, StreamFactory streamFactory, boolean indexOnly, int maxLevel) {
         this.streamFactory = streamFactory;
         this.indexOnly = indexOnly;
         this.maxLevel = maxLevel;
-        product_ListFilename = sensor + "_products_list.csv";
         indexFilename = "ng/" + sensor + "_l" + maxLevel + ".index";
         dataFilename = "ng/" + sensor + "_l" + maxLevel + ".data";
     }
 
     @Override
-    public int createIndex() throws IOException {
+    public int createIndex(String productListFilename) throws IOException {
         IndexCreator indexCreator = new IndexCreator(maxLevel);
-        try (InputStream inputStream = streamFactory.createInputStream(product_ListFilename)) {
+        addRecordsToIndex(productListFilename, indexCreator);
+        writeIndex(indexCreator);
+        return indexCreator.size();
+    }
+
+    @Override
+    public int updateIndex(String productListFilename) throws IOException {
+        IndexCreator indexCreator = new IndexCreator(maxLevel);
+        try (InputStream indexIS = streamFactory.createInputStream(indexFilename);
+             InputStream dataIS = streamFactory.createInputStream(dataFilename)) {
+            indexCreator.loadExistingIndex(indexIS, dataIS);
+        }
+        addRecordsToIndex(productListFilename, indexCreator);
+        writeIndex(indexCreator);
+        return indexCreator.size();
+    }
+
+    private void writeIndex(IndexCreator indexCreator) throws IOException {
+        try (OutputStream indexOS = streamFactory.createOutputStream(indexFilename);
+             OutputStream dataOS = streamFactory.createOutputStream(dataFilename)) {
+            indexCreator.write(indexOS, dataOS);
+        }
+    }
+
+    private void addRecordsToIndex(String productListFilename, IndexCreator indexCreator) throws IOException {
+        try (InputStream inputStream = streamFactory.createInputStream(productListFilename)) {
             CsvRecordReader.CsvRecordIterator iterator = CsvRecordReader.getIterator(inputStream);
             while (iterator.hasNext()) {
                 CsvRecord r = iterator.next();
                 indexCreator.addToIndex(r.getPath(), r.getStartTime(), r.getEndTime(), r.getS2Polygon());
             }
         }
-        try (OutputStream indexOS = streamFactory.createOutputStream(indexFilename);
-             OutputStream dataOS = streamFactory.createOutputStream(dataFilename)) {
-            indexCreator.write(indexOS, dataOS);
-        }
-        return indexCreator.size();
     }
 
     @Override
@@ -234,7 +256,7 @@ public class NgInventory implements Inventory {
         return indexedBinarySearch(startTimes, currentStartTime);
     }
 
-    private static int indexedBinarySearch(int[] startTimes, int currentStartTime) {
+    static int indexedBinarySearch(int[] startTimes, int currentStartTime) {
         int low = 0;
         int high = startTimes.length - 1;
         while (low <= high) {

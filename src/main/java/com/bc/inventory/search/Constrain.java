@@ -15,7 +15,7 @@ import java.util.List;
 public class Constrain {
     private static final DateFormat DATE_FORMAT = DateUtils.createDateFormat("yyyy-MM-dd");
 
-    private final String name;
+    private final String queryName;
     private S2Polygon polygon;
     private long start = -1;
     private long end = -1;
@@ -23,12 +23,16 @@ public class Constrain {
     private long delta = -1;
     private int numResults = Integer.MAX_VALUE;
 
-    public Constrain(String name) {
-        this.name = name;
+    public Constrain() {
+        this("");
     }
 
-    public String getName() {
-        return name;
+    public Constrain(String queryName) {
+        this.queryName = queryName;
+    }
+
+    public String getQueryName() {
+        return queryName;
     }
 
     public S2Polygon getPolygon() {

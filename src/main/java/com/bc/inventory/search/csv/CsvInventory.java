@@ -33,7 +33,14 @@ public class CsvInventory implements Inventory {
     }
 
     @Override
-    public int createIndex() throws IOException {
+    public int createIndex(String productListFilename) throws IOException {
+        // not required, no index in use
+        return 0;
+    }
+
+    @Override
+    public int updateIndex(String productListFilename) throws IOException {
+        // not required, no index in use
         return 0;
     }
 

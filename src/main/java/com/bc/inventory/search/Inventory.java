@@ -8,7 +8,9 @@ import java.util.Collection;
  */
 public interface Inventory {
 
-    int createIndex() throws IOException;
+    int createIndex(String productListFilename) throws IOException;
+
+    int updateIndex(String productListFilename) throws IOException;
 
     int loadIndex() throws IOException;
 
