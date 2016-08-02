@@ -1,6 +1,7 @@
 package com.bc.inventory.search.ng;
 
 import com.bc.inventory.utils.S2Integer;
+import com.google.common.geometry.S2CellUnion;
 import com.google.common.geometry.S2Polygon;
 
 import java.io.IOException;
@@ -54,7 +55,8 @@ class IndexCreator {
     }
 
     public void addToIndex(String path, long startTime, long endTime, S2Polygon s2Polygon) throws IOException {
-        S2Integer.Coverage s2IntCoverage = S2Integer.createS2IntCoverage(s2Polygon, maxLevel);
+        S2CellUnion s2CellUnion = S2Integer.createCellUnion(s2Polygon, maxLevel);
+        S2Integer.Coverage s2IntCoverage = new S2Integer.Coverage(S2Integer.cellUnion2Ints(s2CellUnion));
         int coverageId = getUniqeCoverageId(s2IntCoverage);
         byte[] polygonBytes = DataFile.polygon2byte(s2Polygon);
 

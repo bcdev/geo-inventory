@@ -34,7 +34,11 @@ public class NgInventory implements Inventory {
     private final String dataFilename;
     private final int maxLevel;
 
-    private CoverageIndex index;
+    private int[] startTimes;
+    private int[] endTimes;
+    private int[] coverageIndices;
+    private int[] dataOffsets;
+    private int[][] coverages;
 
     public NgInventory(String sensor, StreamFactory streamFactory, boolean indexOnly, int maxLevel) {
         this.streamFactory = streamFactory;
@@ -64,8 +68,15 @@ public class NgInventory implements Inventory {
 
     @Override
     public int loadIndex() throws IOException {
-        index = new CoverageIndex(streamFactory.createInputStream(indexFilename));
-        return index.size();
+        try (IndexFile.Reader indexFile = new IndexFile.Reader(streamFactory.createInputStream(indexFilename))) {
+            indexFile.readRecords();
+            startTimes = indexFile.getStartTimes();
+            endTimes = indexFile.getEndTimes();
+            coverageIndices = indexFile.getCoverageIndices();
+            dataOffsets = indexFile.getDataOffsets();
+            coverages = indexFile.readCoverages();
+        }
+        return startTimes.length;
     }
 
     @Override
@@ -124,18 +135,18 @@ public class NgInventory implements Inventory {
         S2CellId s2CellId = null;
         int[] polygonIntIds = null;
         List<Integer> results = new ArrayList<>();
-        int productIndex = index.getIndexForTime(startTime);
+        int productIndex = getIndexForTime(startTime);
         if (productIndex == -1) {
             return results;
         }
 
         boolean finishedWithInsitu = false;
         while (!finishedWithInsitu) {
-            if (productIndex >= index.size()) {
+            if (productIndex >= startTimes.length) {
                 finishedWithInsitu = true;
-            } else if (endTime != -1 && index.getStartTime(productIndex) > endTime) {
+            } else if (endTime != -1 && startTimes[productIndex] > endTime) {
                 finishedWithInsitu = true;
-            } else if (startTime != -1 && index.getEndTime(productIndex) < startTime) {
+            } else if (startTime != -1 && endTimes[productIndex] < startTime) {
                 // this product end too early, but maybe the next will be longer
             } else {
                 // time matches, now test geo
@@ -143,7 +154,7 @@ public class NgInventory implements Inventory {
                     if (s2CellId == null) {
                         s2CellId = S2CellId.fromPoint(point);
                     }
-                    int[] coverage = index.getCoverage(productIndex);
+                    int[] coverage = coverages[coverageIndices[productIndex]];
                     if (S2Integer.containsCellId(coverage, s2CellId)) {
                         results.add(productIndex);
                     }
@@ -151,7 +162,7 @@ public class NgInventory implements Inventory {
                     if (polygonIntIds == null) {
                         polygonIntIds = S2Integer.createS2IntIds(polygon, maxLevel);
                     }
-                    if (S2Integer.intersectsCellUnionFast(polygonIntIds, index.getCoverage(productIndex))) {
+                    if (S2Integer.intersectsCellUnionFast(polygonIntIds, coverages[coverageIndices[productIndex]])) {
                         results.add(productIndex);
                     }
                 } else {
@@ -164,13 +175,13 @@ public class NgInventory implements Inventory {
     }
 
     private Collection<String> testPolygonOnData(List<Integer> uniqueProductList, S2Polygon searchPolygon, int numResults) {
-        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(index.getDataOffset(o1), index.getDataOffset(o2)));
+        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(dataOffsets[o1], dataOffsets[o2]));
         List<String> matches = new ArrayList<>();
         try (
                 DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(dataFilename))
         ) {
             for (Integer productID : uniqueProductList) {
-                reader.seekTo(index.getDataOffset(productID));
+                reader.seekTo(dataOffsets[productID]);
                 if (searchPolygon == null || reader.readPolygon().intersects(searchPolygon)) {
                     matches.add(reader.readPath());
                     if (matches.size() == numResults) {
@@ -187,14 +198,14 @@ public class NgInventory implements Inventory {
     private List<String> testPointsOnData(Map<Integer, List<S2Point>> candidatesMap, int numResults) {
 
         List<Integer> uniqueProductList = new ArrayList<>(candidatesMap.keySet());
-        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(index.getDataOffset(o1), index.getDataOffset(o2)));
+        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(dataOffsets[o1], dataOffsets[o2]));
 
         List<String> matches = new ArrayList<>();
         try (
                 DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(dataFilename))
         ) {
             for (Integer productID : uniqueProductList) {
-                reader.seekTo(index.getDataOffset(productID));
+                reader.seekTo(dataOffsets[productID]);
 
                 S2Polygon productPolygon = reader.readPolygon();
                 List<S2Point> s2Points = candidatesMap.get(productID);
@@ -218,4 +229,26 @@ public class NgInventory implements Inventory {
         }
         return matches;
     }
+
+    private int getIndexForTime(int currentStartTime) {
+        return indexedBinarySearch(startTimes, currentStartTime);
+    }
+
+    private static int indexedBinarySearch(int[] startTimes, int currentStartTime) {
+        int low = 0;
+        int high = startTimes.length - 1;
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+            final int t1 = startTimes[mid];
+            if (t1 < currentStartTime) {
+                low = mid + 1;
+            } else if (t1 == currentStartTime) {
+                return mid; // key found
+            } else {
+                high = mid - 1;
+            }
+        }
+        return low == 0 ? low : low - 1;  // key not found
+    }
+
 }

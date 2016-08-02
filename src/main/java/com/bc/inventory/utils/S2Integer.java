@@ -24,9 +24,6 @@ import com.google.common.geometry.S2RegionCoverer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-
-import static com.google.common.collect.Range.greaterThan;
 
 /**
  * S2 methods dealing with a resolution that fits into an integer (32 bit)
@@ -80,7 +77,7 @@ public class S2Integer {
         return s2cell & -s2cell;
     }
 
-    public static int[] convertCellUnion(S2CellUnion cellUnion) {
+    public static int[] cellUnion2Ints(S2CellUnion cellUnion) {
         int[] intIds;
         ArrayList<S2CellId> s2CellIds = cellUnion.cellIds();
         intIds = new int[s2CellIds.size()];
@@ -167,10 +164,10 @@ public class S2Integer {
     }
 
     public static int[] createS2IntIds(S2Polygon s2polygon, int maxLevel) {
-        return convertCellUnion(getS2CellIds(s2polygon, maxLevel));
+        return cellUnion2Ints(createCellUnion(s2polygon, maxLevel));
     }
 
-    private static S2CellUnion getS2CellIds(S2Polygon s2polygon, int maxLevel) {
+    public static S2CellUnion createCellUnion(S2Polygon s2polygon, int maxLevel) {
         S2RegionCoverer coverer = new S2RegionCoverer();
         coverer.setMinLevel(0);
         coverer.setMaxLevel(maxLevel);

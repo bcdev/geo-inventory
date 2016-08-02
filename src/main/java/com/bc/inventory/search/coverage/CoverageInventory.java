@@ -162,7 +162,7 @@ public class CoverageInventory implements Inventory {
                         coverer.setMaxLevel(3);
                         coverer.setMaxCells(500);
                         S2CellUnion cellUnion = coverer.getCovering(polygon);
-                        polygonIntIds = S2Integer.convertCellUnion(cellUnion);
+                        polygonIntIds = S2Integer.cellUnion2Ints(cellUnion);
                     }
                     if (S2Integer.intersectsCellUnionFast(polygonIntIds, index.allCoverages[record.coverageIndex])) {
                         results.add(productIndex);

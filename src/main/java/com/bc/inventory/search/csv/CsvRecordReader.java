@@ -49,7 +49,7 @@ public class CsvRecordReader {
         private CsvRecordIterator(InputStream inputStream) throws IOException {
             bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
             reachedEnd = false;
-            record = null;
+            record = getNextRecord();
         }
 
         @Override
@@ -71,29 +71,26 @@ public class CsvRecordReader {
 
         private CsvRecord getNextRecord() {
             String line = readLineSafe();
-            while (reachedEnd) {
+            while (!reachedEnd) {
                 try {
-                    record = parseLine(line);
+                    return parseLine(line);
                 } catch (ParseException ignore) {
                     ignore.printStackTrace();
-                } finally {
-                    line = readLineSafe();
                 }
+                line = readLineSafe();
             }
-            return record;
+            return null;
         }
 
         private String readLineSafe() {
             try {
                 String readLine = bufferedReader.readLine();
                 if (readLine == null) {
-                    record = null;
                     reachedEnd = true;
                 }
                 return readLine;
             } catch (IOException e) {
                 e.printStackTrace();
-                record = null;
                 reachedEnd = true;
             }
             return null;

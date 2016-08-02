@@ -74,15 +74,18 @@ public class Benchmark {
 
         testQueries("Ng3.1", test, new NgInventory(ds, streamFactory, false, 3));
         testQueries("Ng3.2", test, new NgInventory(ds, streamFactory, false, 3));
+        testQueries("Ng3.3", test, new NgInventory(ds, streamFactory, false, 3));
+        testQueries("Ng3.4", test, new NgInventory(ds, streamFactory, false, 3));
 
-        testQueries("Ng4.1", test, new NgInventory(ds, streamFactory, false, 4));
-        testQueries("Ng4.2", test, new NgInventory(ds, streamFactory, false, 4));
+//        testQueries("Ng4.1", test, new NgInventory(ds, streamFactory, false, 4));
+//        testQueries("Ng4.2", test, new NgInventory(ds, streamFactory, false, 4));
 //        testQueries("NgI4", test, new NgInventory(ds, streamFactory, true, 4));
 
 //        testQueries("NgI3", test, new NgInventory(ds, streamFactory, true, 3));
 
 //        testQueries("NgI5", test, new NgInventory(ds, streamFactory, true, 5));
-//        testQueries("Ng5", test, new NgInventory(ds, streamFactory, false, 5));
+//        testQueries("Ng5.1", test, new NgInventory(ds, streamFactory, false, 5));
+//        testQueries("Ng5.2", test, new NgInventory(ds, streamFactory, false, 5));
 
 
         test.printMeasurements();
