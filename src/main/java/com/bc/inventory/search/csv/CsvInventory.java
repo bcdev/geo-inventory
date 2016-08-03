@@ -3,11 +3,11 @@ package com.bc.inventory.search.csv;
 import com.bc.inventory.search.Constrain;
 import com.bc.inventory.search.Inventory;
 import com.bc.inventory.search.QueryResult;
-import com.bc.inventory.search.StreamFactory;
 import com.bc.inventory.utils.SimpleRecord;
 import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -22,14 +22,11 @@ import java.util.Set;
  */
 public class CsvInventory implements Inventory {
 
-    private final String sensor;
-    private final StreamFactory streamFactory;
-
+    private final String productListFilename;
     private List<CsvRecord> csvRecordList;
 
-    public CsvInventory(String sensor, StreamFactory  streamFactory) {
-        this.sensor = sensor;
-        this.streamFactory = streamFactory;
+    public CsvInventory(String productListFilename) {
+        this.productListFilename = productListFilename;
     }
 
     @Override
@@ -46,7 +43,7 @@ public class CsvInventory implements Inventory {
 
     @Override
     public int loadIndex() throws IOException {
-        try (InputStream inputStream = streamFactory.createInputStream(sensor + "_products_list.csv")) {
+        try (InputStream inputStream = new FileInputStream(productListFilename)) {
             csvRecordList = CsvRecordReader.readAllRecords(inputStream);
             return csvRecordList.size();
         }

@@ -36,11 +36,12 @@ public class NgInventory implements Inventory {
 
     private static final long MINUTES_PER_MILLI = 60 * 1000;
     private static final DateFormat DATE_FORMAT = DateUtils.createDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+    private static final int DEFFAULT_MAX_LEVEL = 3;
+    private static final String INDEX_FILENAME = "index";
+    private static final String DATA_FILENAME = "data";
 
     private final StreamFactory streamFactory;
     private final boolean indexOnly;
-    private final String indexFilename;
-    private final String dataFilename;
     private final int maxLevel;
 
     private int[] startTimes;
@@ -49,16 +50,14 @@ public class NgInventory implements Inventory {
     private int[] dataOffsets;
     private int[][] coverages;
 
-    public NgInventory(String sensor, StreamFactory streamFactory) {
-        this(sensor, streamFactory, false, 3);
+    public NgInventory(StreamFactory streamFactory) {
+        this(streamFactory, false, DEFFAULT_MAX_LEVEL);
     }
 
-    public NgInventory(String sensor, StreamFactory streamFactory, boolean indexOnly, int maxLevel) {
+    public NgInventory(StreamFactory streamFactory, boolean indexOnly, int maxLevel) {
         this.streamFactory = streamFactory;
         this.indexOnly = indexOnly;
         this.maxLevel = maxLevel;
-        indexFilename = "ng/" + sensor + "_l" + maxLevel + ".index";
-        dataFilename = "ng/" + sensor + "_l" + maxLevel + ".data";
     }
 
     @Override
@@ -72,8 +71,8 @@ public class NgInventory implements Inventory {
     @Override
     public int updateIndex(String productListFilename) throws IOException {
         IndexCreator indexCreator = new IndexCreator(maxLevel);
-        try (InputStream indexIS = streamFactory.createInputStream(indexFilename);
-             InputStream dataIS = streamFactory.createInputStream(dataFilename)) {
+        try (InputStream indexIS = streamFactory.createInputStream(INDEX_FILENAME);
+             InputStream dataIS = streamFactory.createInputStream(DATA_FILENAME)) {
             indexCreator.loadExistingIndex(indexIS, dataIS);
         }
         addRecordsToIndex(productListFilename, indexCreator);
@@ -82,8 +81,8 @@ public class NgInventory implements Inventory {
     }
 
     private void writeIndex(IndexCreator indexCreator) throws IOException {
-        try (OutputStream indexOS = streamFactory.createOutputStream(indexFilename);
-             OutputStream dataOS = streamFactory.createOutputStream(dataFilename)) {
+        try (OutputStream indexOS = streamFactory.createOutputStream(INDEX_FILENAME);
+             OutputStream dataOS = streamFactory.createOutputStream(DATA_FILENAME)) {
             indexCreator.write(indexOS, dataOS);
         }
     }
@@ -100,7 +99,7 @@ public class NgInventory implements Inventory {
 
     @Override
     public int loadIndex() throws IOException {
-        try (IndexFile.Reader indexFile = new IndexFile.Reader(streamFactory.createInputStream(indexFilename))) {
+        try (IndexFile.Reader indexFile = new IndexFile.Reader(streamFactory.createInputStream(INDEX_FILENAME))) {
             indexFile.readRecords();
             startTimes = indexFile.getStartTimes();
             endTimes = indexFile.getEndTimes();
@@ -113,7 +112,7 @@ public class NgInventory implements Inventory {
 
     public void writeDB(String csvFile) throws IOException {
         try (
-                DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(dataFilename));
+                DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME));
                 Writer csvWriter = new BufferedWriter(new FileWriter(csvFile))
         ) {
             for (int i = 0; i < dataOffsets.length; i++) {
@@ -229,7 +228,7 @@ public class NgInventory implements Inventory {
         Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(dataOffsets[o1], dataOffsets[o2]));
         List<String> matches = new ArrayList<>();
         try (
-                DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(dataFilename))
+                DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME))
         ) {
             for (Integer productID : uniqueProductList) {
                 reader.seekTo(dataOffsets[productID]);
@@ -253,7 +252,7 @@ public class NgInventory implements Inventory {
 
         List<String> matches = new ArrayList<>();
         try (
-                DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(dataFilename))
+                DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME))
         ) {
             for (Integer productID : uniqueProductList) {
                 reader.seekTo(dataOffsets[productID]);

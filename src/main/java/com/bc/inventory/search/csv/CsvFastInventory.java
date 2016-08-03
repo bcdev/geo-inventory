@@ -3,15 +3,14 @@ package com.bc.inventory.search.csv;
 import com.bc.inventory.search.Constrain;
 import com.bc.inventory.search.Inventory;
 import com.bc.inventory.search.QueryResult;
-import com.bc.inventory.search.StreamFactory;
 import com.bc.inventory.utils.SimpleRecord;
 import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -22,14 +21,11 @@ import java.util.Set;
  */
 public class CsvFastInventory implements Inventory {
 
-    private final String sensor;
-    private final StreamFactory streamFactory;
-
+    private final String productListFilename;
     private List<CsvRecord> csvRecordList;
 
-    public CsvFastInventory(String sensor, StreamFactory streamFactory) {
-        this.sensor = sensor;
-        this.streamFactory = streamFactory;
+    public CsvFastInventory(String productListFilename) {
+        this.productListFilename = productListFilename;
     }
 
     @Override
@@ -46,7 +42,7 @@ public class CsvFastInventory implements Inventory {
 
     @Override
     public int loadIndex() throws IOException {
-        try (InputStream inputStream = streamFactory.createInputStream(sensor + "_products_list.csv")) {
+        try (InputStream inputStream = new FileInputStream(productListFilename)) {
             csvRecordList = CsvRecordReader.readAllRecords(inputStream);
             Collections.sort(csvRecordList, (o1, o2) -> Long.compare(o1.getStartTime(), o2.getStartTime()));
             return csvRecordList.size();
@@ -82,7 +78,7 @@ public class CsvFastInventory implements Inventory {
         List<String> results = new ArrayList<>();
         int productIndex = getIndexForTime(startTime);
         if (productIndex == -1) {
-            return Collections.EMPTY_LIST;
+            return results;
         }
 
         boolean finishedWithInsitu = false;
@@ -117,7 +113,7 @@ public class CsvFastInventory implements Inventory {
 
     private int getIndexForTime(long startTime) {
         int low = 0;
-        int high = csvRecordList.size() -1;
+        int high = csvRecordList.size() - 1;
         while (low <= high) {
             int mid = (low + high) >>> 1;
             final long t1 = csvRecordList.get(mid).getStartTime();

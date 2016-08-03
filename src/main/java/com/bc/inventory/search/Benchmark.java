@@ -37,53 +37,47 @@ public class Benchmark {
             System.out.printf("args[0] = '%s' is not a directory%n", args[0]);
             System.exit(1);
         }
-        StreamFactory streamFactory = new FileStreamFactory(baseDir);
         constrains = createConstrains();
 
-//        measure(streamFactory, "test");
+//        measure("test");
 
-//        measure(streamFactory, "meris2005");
-//        measure(streamFactory, "modis2005");
+//        measure("meris2005");
+//        measure("modis2005");
 
-        measure(streamFactory, "meris");
-        measure(streamFactory, "modis");
+        measure("meris");
+        measure("modis");
 
     }
 
-    private static void measure(StreamFactory streamFactory, String sensor) throws IOException {
-        MeasurementTable test = new MeasurementTable(sensor);
+    private static void measure(String sensor) throws IOException {
+        MeasurementTable mt = new MeasurementTable(sensor);
+        String productListFilename = new File(baseDir, sensor + "_products_list.csv").getAbsolutePath();
 
-//        testQueries("CSV", test, new CsvInventory(sensor, streamFactory));
-//        testQueries("CsvFast", test, new CsvFastInventory(sensor, streamFactory));
+//        testQueries("CSV", mt, new CsvInventory(productListFilename));
+//        testQueries("CsvFast", mt, new CsvFastInventory(productListFilename));
+        {
+            StreamFactory streamFactory = new FileStreamFactory(new File(baseDir, sensor + "_l3"));
+//            testIndexCreation("Ng3", mt, productListFilename, new NgInventory(streamFactory, false, 3));
 
-//        testIndexCreation("Ng2", test, sensor, new NgInventory(sensor, streamFactory, false, 2));
-//        testIndexCreation("Ng3", test, sensor, new NgInventory(sensor, streamFactory, false, 3));
-//        testIndexCreation("Ng4", test, sensor, new NgInventory(sensor, streamFactory, false, 4));
-//        testIndexCreation("Ng5", test, sensor, new NgInventory(sensor, streamFactory, false, 5));
+            testQueries("NgI3", mt, new NgInventory(streamFactory, true, 3));
+            testQueries("Ng3.1", mt, new NgInventory(streamFactory, false, 3));
+            testQueries("Ng3.2", mt, new NgInventory(streamFactory, false, 3));
+        }
 
-//        testQueries("NgI2", test, new NgInventory(sensor, streamFactory, true, 2));
-//        testQueries("Ng2.0", test, new NgInventory(sensor, streamFactory, false, 2));
-//        testQueries("Ng2.1", test, new NgInventory(sensor, streamFactory, false, 2));
+        {
+            StreamFactory streamFactory = new FileStreamFactory(new File(baseDir, sensor + "_l5"));
+//            testIndexCreation("Ng5", mt, productListFilename, new NgInventory(streamFactory, false, 5));
 
-        testQueries("Ng3.1", test, new NgInventory(sensor, streamFactory, false, 3));
-        testQueries("Ng3.2", test, new NgInventory(sensor, streamFactory, false, 3));
-        testQueries("Ng3.3", test, new NgInventory(sensor, streamFactory, false, 3));
-        testQueries("Ng3.4", test, new NgInventory(sensor, streamFactory, false, 3));
-
-//        testQueries("Ng4.1", test, new NgInventory(sensor, streamFactory, false, 4));
-//        testQueries("Ng4.2", test, new NgInventory(sensor, streamFactory, false, 4));
-//        testQueries("NgI4", test, new NgInventory(sensor, streamFactory, true, 4));
-
-//        testQueries("NgI5", test, new NgInventory(sensor, streamFactory, true, 5));
-//        testQueries("Ng5.1", test, new NgInventory(sensor, streamFactory, false, 5));
-//        testQueries("Ng5.2", test, new NgInventory(sensor, streamFactory, false, 5));
-
-        test.printMeasurements();
+            testQueries("NgI5", mt, new NgInventory(streamFactory, true, 5));
+            testQueries("Ng5.1", mt, new NgInventory(streamFactory, false, 5));
+            testQueries("Ng5.2", mt, new NgInventory(streamFactory, false, 5));
+        }
+        mt.printMeasurements();
     }
 
-    private static void testIndexCreation(String label, MeasurementTable mt, String sensor, Inventory inventory) throws IOException {
+    private static void testIndexCreation(String label, MeasurementTable mt, String productListFilename, Inventory inventory) throws IOException {
         try (Measurement m = new Measurement("create index", label, mt)) {
-            m.setNumProducts(inventory.createIndex(sensor + "_products_list.csv"));
+            m.setNumProducts(inventory.createIndex(productListFilename));
         }
     }
 
@@ -99,7 +93,7 @@ public class Benchmark {
         }
     }
 
-    static List<Constrain> createConstrains() throws Exception {
+    private static List<Constrain> createConstrains() throws Exception {
         S2WKTReader wktReader = new S2WKTReader();
         S2Polygon northseaPoly = (S2Polygon) wktReader.read(NORTHSEA_WKT);
         S2Polygon acadiaPoly = (S2Polygon) wktReader.read(ACADIA_WKT);
@@ -121,7 +115,7 @@ public class Benchmark {
         return Arrays.asList(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12);
     }
 
-    static List<SimpleRecord> readInsituRecords(File file) throws Exception {
+    private static List<SimpleRecord> readInsituRecords(File file) throws Exception {
         try (Reader reader = new LineNumberReader(new FileReader(file), 100 * 1024)) {
             CsvRecordSource recordSource = new CsvRecordSource(reader, SimpleRecord.INSITU_DATE_FORMAT);
             boolean hasTime = recordSource.getHeader().hasTime();

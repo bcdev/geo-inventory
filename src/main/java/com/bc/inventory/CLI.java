@@ -57,23 +57,23 @@ public class CLI {
     }
 
     private static void create(StreamFactory streamFactory, String csvFile) throws IOException {
-        NgInventory inventory = new NgInventory("default", streamFactory);
+        NgInventory inventory = new NgInventory(streamFactory);
         inventory.createIndex(csvFile);
     }
 
     private static void dump(StreamFactory streamFactory, String csvFile) throws IOException {
-        NgInventory inventory = new NgInventory("modis", streamFactory);
+        NgInventory inventory = new NgInventory(streamFactory);
         inventory.loadIndex();
         inventory.writeDB(csvFile);
     }
 
     private static void update(StreamFactory streamFactory, String csvFile) throws IOException {
-        NgInventory inventory = new NgInventory("modis", streamFactory);
+        NgInventory inventory = new NgInventory(streamFactory);
         inventory.updateIndex(csvFile);
     }
 
     private static void query(StreamFactory streamFactory, String[] args) throws IOException {
-        NgInventory inventory = new NgInventory("default", streamFactory);
+        NgInventory inventory = new NgInventory(streamFactory);
         inventory.loadIndex();
         Constrain constraints = parseConstraint(args);
         QueryResult queryResult = inventory.query(constraints);
