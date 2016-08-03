@@ -17,13 +17,16 @@ import java.util.Collection;
  * The following options are supported:
  * <p>
  * create <DB-dir> <CSV-file>
- * creates an DB from the given CSV file
+ *   creates an DB from the given CSV file
  * <p>
  * update <DB-dir> <CSV-file>
- * updates the DB from the given CSV file
+ *   updates the DB from the given CSV file
+ * <p>
+ * dump <DB-dir> <CSV-file>
+ *   writes the content of the DB to the CSV file
  * <p>
  * query <DB-dir> <constraints>
- * queries the DB using the given constraints.
+ *   queries the DB using the given constraints.
  */
 public class CLI {
 
@@ -44,6 +47,10 @@ public class CLI {
             case "query":
                 query(streamFactory, args);
                 System.exit(0);
+            case "dump":
+                dump(streamFactory, args[2]);
+                System.exit(0);
+
         }
         printUsage();
         System.exit(1);
@@ -54,8 +61,14 @@ public class CLI {
         inventory.createIndex(csvFile);
     }
 
+    private static void dump(StreamFactory streamFactory, String csvFile) throws IOException {
+        NgInventory inventory = new NgInventory("modis", streamFactory);
+        inventory.loadIndex();
+        inventory.writeDB(csvFile);
+    }
+
     private static void update(StreamFactory streamFactory, String csvFile) throws IOException {
-        NgInventory inventory = new NgInventory("default", streamFactory);
+        NgInventory inventory = new NgInventory("modis", streamFactory);
         inventory.updateIndex(csvFile);
     }
 
@@ -110,6 +123,8 @@ public class CLI {
         System.out.println("     creates an DB from the given CSV file");
         System.out.println("update <DB-dir> <CSV-file>");
         System.out.println("    updates the DB from the given CSV file");
+        System.out.println("dump <DB-dir> <CSV-file>");
+        System.out.println("    writes the content of the DB to the CSV file");
         System.out.println("query <DB-dir> <constraints>");
         System.out.println("     queries the DB using the given constraints:");
         System.out.println("     startTime YY-MM-DD.....");

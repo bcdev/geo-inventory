@@ -1,23 +1,30 @@
 package com.bc.inventory.search.ng;
 
+import com.bc.geometry.s2.S2WKTWriter;
 import com.bc.inventory.search.Constrain;
 import com.bc.inventory.search.Inventory;
 import com.bc.inventory.search.QueryResult;
 import com.bc.inventory.search.StreamFactory;
 import com.bc.inventory.search.csv.CsvRecord;
 import com.bc.inventory.search.csv.CsvRecordReader;
+import com.bc.inventory.utils.DateUtils;
 import com.bc.inventory.utils.S2Integer;
 import com.bc.inventory.utils.SimpleRecord;
 import com.google.common.geometry.S2CellId;
 import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Writer;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +33,9 @@ import java.util.Map;
  * An inventory based on a list of coverages.
  */
 public class NgInventory implements Inventory {
+
+    private static final long MINUTES_PER_MILLI = 60 * 1000;
+    private static final DateFormat DATE_FORMAT = DateUtils.createDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
     private final StreamFactory streamFactory;
     private final boolean indexOnly;
@@ -101,6 +111,24 @@ public class NgInventory implements Inventory {
         return startTimes.length;
     }
 
+    public void writeDB(String csvFile) throws IOException {
+        try (
+                DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(dataFilename));
+                Writer csvWriter = new BufferedWriter(new FileWriter(csvFile))
+        ) {
+            for (int i = 0; i < dataOffsets.length; i++) {
+                reader.seekTo(dataOffsets[i]);
+                String wkt = S2WKTWriter.write(reader.readPolygon());
+                String path = reader.readPath();
+                String startTime = DATE_FORMAT.format(new Date(startTimes[i] * MINUTES_PER_MILLI));
+                String endTime = DATE_FORMAT.format(new Date(endTimes[i] * MINUTES_PER_MILLI));
+                csvWriter.write(String.format("%s\t%s\t%s\t%s%n", path, startTime, endTime, wkt));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public QueryResult query(Constrain constrain) {
         List<SimpleRecord> insitu = constrain.getInsitu();
@@ -153,6 +181,7 @@ public class NgInventory implements Inventory {
         }
     }
 
+    @SuppressWarnings("StatementWithEmptyBody")
     private List<Integer> testOnIndex(int startTime, int endTime, S2Point point, S2Polygon polygon) {
         S2CellId s2CellId = null;
         int[] polygonIntIds = null;
@@ -272,5 +301,4 @@ public class NgInventory implements Inventory {
         }
         return low == 0 ? low : low - 1;  // key not found
     }
-
 }
