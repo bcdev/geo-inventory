@@ -1,13 +1,11 @@
 package com.bc.inventory.search;
 
-import com.bc.geometry.s2.S2WKTReader;
 import com.bc.inventory.insitu.CsvRecordSource;
 import com.bc.inventory.insitu.Record;
 import com.bc.inventory.search.ng.NgInventory;
 import com.bc.inventory.utils.Measurement;
 import com.bc.inventory.utils.MeasurementTable;
 import com.bc.inventory.utils.SimpleRecord;
-import com.google.common.geometry.S2Polygon;
 
 import java.io.File;
 import java.io.FileReader;
@@ -94,24 +92,21 @@ public class Benchmark {
     }
 
     private static List<Constrain> createConstrains() throws Exception {
-        S2WKTReader wktReader = new S2WKTReader();
-        S2Polygon northseaPoly = (S2Polygon) wktReader.read(NORTHSEA_WKT);
-        S2Polygon acadiaPoly = (S2Polygon) wktReader.read(ACADIA_WKT);
         List<SimpleRecord> latLonTime = readInsituRecords(new File(baseDir, "insitu.csv"));
         List<SimpleRecord> latLon = readInsituRecords(new File(baseDir, "extracts.csv"));
 
-        Constrain c1 = new Constrain("northsea").withPolygon(northseaPoly);
-        Constrain c2 = new Constrain("acadia, 1 year").withPolygon(acadiaPoly).withStartTime("2005-01-01").withEndTime("2006-01-01");
-        Constrain c3 = new Constrain("northsea, 1 year").withPolygon(northseaPoly).withStartTime("2005-01-01").withEndTime("2006-01-01");
-        Constrain c4 = new Constrain("northsea, 1 year, #100").withPolygon(northseaPoly).withStartTime("2005-01-01").withEndTime("2006-01-01").withNumResults(100);
-        Constrain c5 = new Constrain("northsea, 1 week").withPolygon(northseaPoly).withStartTime("2005-06-01").withEndTime("2005-06-07");
-        Constrain c6 = new Constrain("northsea, 1 day").withPolygon(northseaPoly).withStartTime("2005-06-01").withEndTime("2005-06-02");
+        Constrain c1 = new Constrain("northsea").withPolygon(NORTHSEA_WKT);
+        Constrain c2 = new Constrain("acadia, 1 year").withPolygon(ACADIA_WKT).withStartDate("2005-01-01").withEndDate("2006-01-01");
+        Constrain c3 = new Constrain("northsea, 1 year").withPolygon(NORTHSEA_WKT).withStartDate("2005-01-01").withEndDate("2006-01-01");
+        Constrain c4 = new Constrain("northsea, 1 year, #100").withPolygon(NORTHSEA_WKT).withStartDate("2005-01-01").withEndDate("2006-01-01").withNumResults(100);
+        Constrain c5 = new Constrain("northsea, 1 week").withPolygon(NORTHSEA_WKT).withStartDate("2005-06-01").withEndDate("2005-06-07");
+        Constrain c6 = new Constrain("northsea, 1 day").withPolygon(NORTHSEA_WKT).withStartDate("2005-06-01").withEndDate("2005-06-02");
         Constrain c7 = new Constrain("matchups 30k lat/lon/time").withInsitu(latLonTime).withDeltaTime(HOURS_IN_MILLIS * 3);
         Constrain c8 = new Constrain("extracts 3 lat/lon").withInsitu(latLon);
         Constrain c9 = new Constrain("extracts 3 lat/lon, 100#").withInsitu(latLon).withNumResults(100);
-        Constrain c10 = new Constrain("extracts 3 lat/lon, 1 year").withInsitu(latLon).withStartTime("2005-01-01").withEndTime("2006-01-01");
-        Constrain c11 = new Constrain("1 year").withStartTime("2005-01-01").withEndTime("2006-01-01");
-        Constrain c12 = new Constrain("1 year, 100#").withStartTime("2005-01-01").withEndTime("2006-01-01").withNumResults(100);
+        Constrain c10 = new Constrain("extracts 3 lat/lon, 1 year").withInsitu(latLon).withStartDate("2005-01-01").withEndDate("2006-01-01");
+        Constrain c11 = new Constrain("1 year").withStartDate("2005-01-01").withEndDate("2006-01-01");
+        Constrain c12 = new Constrain("1 year, 100#").withStartDate("2005-01-01").withEndDate("2006-01-01").withNumResults(100);
         return Arrays.asList(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12);
     }
 

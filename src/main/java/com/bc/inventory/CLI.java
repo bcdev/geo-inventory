@@ -1,12 +1,10 @@
 package com.bc.inventory;
 
-import com.bc.geometry.s2.S2WKTReader;
 import com.bc.inventory.search.Constrain;
 import com.bc.inventory.search.FileStreamFactory;
 import com.bc.inventory.search.QueryResult;
 import com.bc.inventory.search.StreamFactory;
 import com.bc.inventory.search.ng.NgInventory;
-import com.google.common.geometry.S2Polygon;
 
 import java.io.File;
 import java.io.IOException;
@@ -93,19 +91,13 @@ public class CLI {
             String value = args[i++];
             switch (key) {
                 case "startTime":
-                    constrain.withStartTime(value);
+                    constrain.withStartDate(value);
                     break;
                 case "endTime":
-                    constrain.withEndTime(value);
+                    constrain.withEndDate(value);
                     break;
                 case "wkt":
-                    S2WKTReader wktReader = new S2WKTReader();
-                    Object o = wktReader.read(value);
-                    if (o instanceof S2Polygon) {
-                        constrain.withPolygon((S2Polygon) o);
-                    } else {
-                        System.out.println("Given polygon is not a valid polygon: " + value);
-                    }
+                    constrain.withPolygon(value);
                     break;
                 default:
                     System.out.println("unknown parameters for query: " + key);
