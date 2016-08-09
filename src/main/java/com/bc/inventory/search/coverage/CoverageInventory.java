@@ -1,4 +1,4 @@
-package com.bc.inventory.search.ng;
+package com.bc.inventory.search.coverage;
 
 import com.bc.geometry.s2.S2WKTWriter;
 import com.bc.inventory.search.Constrain;
@@ -32,7 +32,7 @@ import java.util.Map;
 /**
  * An inventory based on a list of coverages.
  */
-public class NgInventory implements Inventory {
+public class CoverageInventory implements Inventory {
 
     private static final long MINUTES_PER_MILLI = 60 * 1000;
     private static final DateFormat DATE_FORMAT = DateUtils.createDateFormat("yyyy-MM-dd'T'HH:mm:ss");
@@ -50,11 +50,11 @@ public class NgInventory implements Inventory {
     private int[] dataOffsets;
     private int[][] coverages;
 
-    public NgInventory(StreamFactory streamFactory) {
+    public CoverageInventory(StreamFactory streamFactory) {
         this(streamFactory, false, DEFFAULT_MAX_LEVEL);
     }
 
-    public NgInventory(StreamFactory streamFactory, boolean indexOnly, int maxLevel) {
+    public CoverageInventory(StreamFactory streamFactory, boolean indexOnly, int maxLevel) {
         this.streamFactory = streamFactory;
         this.indexOnly = indexOnly;
         this.maxLevel = maxLevel;
@@ -130,26 +130,23 @@ public class NgInventory implements Inventory {
 
     @Override
     public QueryResult query(Constrain constrain) {
-        List<SimpleRecord> insitu = constrain.getInsitu();
+        SimpleRecord[] insituRecords = constrain.getInsituRecords();
         int start = IndexCreator.startTimeInMin(constrain.getStartTime());
         int end = IndexCreator.endTimeInMin(constrain.getEndTime());
         S2Polygon polygon = constrain.getPolygon();
-        int numResults = constrain.getNumResults();
+        int maxNumResults = constrain.getMaxNumResults();
 
-        if (insitu == null) {
-            List<Integer> productIDs;
-            Collection<String> paths;
-            productIDs = testOnIndex(start, end, null, polygon);
+        if (insituRecords.length == 0) {
+            List<Integer> productIDs = testOnIndex(start, end, null, polygon);
             if (indexOnly) {
-                paths = testPolygonOnData(productIDs, null, numResults);
+                return new QueryResult(testPolygonOnData(productIDs, null, maxNumResults));
             } else {
-                paths = testPolygonOnData(productIDs, polygon, numResults);
+                return new QueryResult(testPolygonOnData(productIDs, polygon, maxNumResults));
             }
-            return new QueryResult(paths);
         } else {
             Map<Integer, List<S2Point>> candidatesMap = new HashMap<>();
-            for (SimpleRecord insituRecord : insitu) {
-                long delta = constrain.getDelta();
+            for (SimpleRecord insituRecord : insituRecords) {
+                long delta = constrain.getTimeDelta();
                 if (delta != -1) {
                     start = IndexCreator.startTimeInMin(insituRecord.getTime() - delta);
                     end = IndexCreator.endTimeInMin(insituRecord.getTime() + delta);
@@ -174,7 +171,7 @@ public class NgInventory implements Inventory {
                     paths.add("index_only:" + productID);
                 }
             } else {
-                paths = testPointsOnData(candidatesMap, numResults);
+                paths = testPointsOnData(candidatesMap, maxNumResults);
             }
             return new QueryResult(paths);
         }
@@ -227,9 +224,7 @@ public class NgInventory implements Inventory {
     private Collection<String> testPolygonOnData(List<Integer> uniqueProductList, S2Polygon searchPolygon, int numResults) {
         Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(dataOffsets[o1], dataOffsets[o2]));
         List<String> matches = new ArrayList<>();
-        try (
-                DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME))
-        ) {
+        try (DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME))) {
             for (Integer productID : uniqueProductList) {
                 reader.seekTo(dataOffsets[productID]);
                 if (searchPolygon == null || reader.readPolygon().intersects(searchPolygon)) {
@@ -245,15 +240,13 @@ public class NgInventory implements Inventory {
         return matches;
     }
 
-    private List<String> testPointsOnData(Map<Integer, List<S2Point>> candidatesMap, int numResults) {
+    private List<String> testPointsOnData(Map<Integer, List<S2Point>> candidatesMap, int maxNumResults) {
 
         List<Integer> uniqueProductList = new ArrayList<>(candidatesMap.keySet());
         Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(dataOffsets[o1], dataOffsets[o2]));
 
         List<String> matches = new ArrayList<>();
-        try (
-                DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME))
-        ) {
+        try (DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME))) {
             for (Integer productID : uniqueProductList) {
                 reader.seekTo(dataOffsets[productID]);
 
@@ -268,7 +261,7 @@ public class NgInventory implements Inventory {
                 }
                 if (pointInPolygon) {
                     matches.add(reader.readPath());
-                    if (matches.size() == numResults) {
+                    if (matches.size() == maxNumResults) {
                         return matches;
                     }
                 }

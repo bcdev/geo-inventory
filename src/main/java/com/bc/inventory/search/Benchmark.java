@@ -2,7 +2,7 @@ package com.bc.inventory.search;
 
 import com.bc.inventory.insitu.CsvRecordSource;
 import com.bc.inventory.insitu.Record;
-import com.bc.inventory.search.ng.NgInventory;
+import com.bc.inventory.search.coverage.CoverageInventory;
 import com.bc.inventory.utils.Measurement;
 import com.bc.inventory.utils.MeasurementTable;
 import com.bc.inventory.utils.SimpleRecord;
@@ -57,18 +57,18 @@ public class Benchmark {
             StreamFactory streamFactory = new FileStreamFactory(new File(baseDir, sensor + "_l3"));
 //            testIndexCreation("Ng3", mt, productListFilename, new NgInventory(streamFactory, false, 3));
 
-            testQueries("NgI3", mt, new NgInventory(streamFactory, true, 3));
-            testQueries("Ng3.1", mt, new NgInventory(streamFactory, false, 3));
-            testQueries("Ng3.2", mt, new NgInventory(streamFactory, false, 3));
+//            testQueries("NgI3", mt, new CoverageInventory(streamFactory, true, 3));
+            testQueries("Ng3.1", mt, new CoverageInventory(streamFactory, false, 3));
+            testQueries("Ng3.2", mt, new CoverageInventory(streamFactory, false, 3));
         }
 
         {
             StreamFactory streamFactory = new FileStreamFactory(new File(baseDir, sensor + "_l5"));
 //            testIndexCreation("Ng5", mt, productListFilename, new NgInventory(streamFactory, false, 5));
 
-            testQueries("NgI5", mt, new NgInventory(streamFactory, true, 5));
-            testQueries("Ng5.1", mt, new NgInventory(streamFactory, false, 5));
-            testQueries("Ng5.2", mt, new NgInventory(streamFactory, false, 5));
+//            testQueries("NgI5", mt, new CoverageInventory(streamFactory, true, 5));
+            testQueries("Ng5.1", mt, new CoverageInventory(streamFactory, false, 5));
+            testQueries("Ng5.2", mt, new CoverageInventory(streamFactory, false, 5));
         }
         mt.printMeasurements();
     }
@@ -95,18 +95,18 @@ public class Benchmark {
         List<SimpleRecord> latLonTime = readInsituRecords(new File(baseDir, "insitu.csv"));
         List<SimpleRecord> latLon = readInsituRecords(new File(baseDir, "extracts.csv"));
 
-        Constrain c1 = new Constrain("northsea").withPolygon(NORTHSEA_WKT);
-        Constrain c2 = new Constrain("acadia, 1 year").withPolygon(ACADIA_WKT).withStartDate("2005-01-01").withEndDate("2006-01-01");
-        Constrain c3 = new Constrain("northsea, 1 year").withPolygon(NORTHSEA_WKT).withStartDate("2005-01-01").withEndDate("2006-01-01");
-        Constrain c4 = new Constrain("northsea, 1 year, #100").withPolygon(NORTHSEA_WKT).withStartDate("2005-01-01").withEndDate("2006-01-01").withNumResults(100);
-        Constrain c5 = new Constrain("northsea, 1 week").withPolygon(NORTHSEA_WKT).withStartDate("2005-06-01").withEndDate("2005-06-07");
-        Constrain c6 = new Constrain("northsea, 1 day").withPolygon(NORTHSEA_WKT).withStartDate("2005-06-01").withEndDate("2005-06-02");
-        Constrain c7 = new Constrain("matchups 30k lat/lon/time").withInsitu(latLonTime).withDeltaTime(HOURS_IN_MILLIS * 3);
-        Constrain c8 = new Constrain("extracts 3 lat/lon").withInsitu(latLon);
-        Constrain c9 = new Constrain("extracts 3 lat/lon, 100#").withInsitu(latLon).withNumResults(100);
-        Constrain c10 = new Constrain("extracts 3 lat/lon, 1 year").withInsitu(latLon).withStartDate("2005-01-01").withEndDate("2006-01-01");
-        Constrain c11 = new Constrain("1 year").withStartDate("2005-01-01").withEndDate("2006-01-01");
-        Constrain c12 = new Constrain("1 year, 100#").withStartDate("2005-01-01").withEndDate("2006-01-01").withNumResults(100);
+        Constrain c1 = new Constrain.Builder("northsea").polygon(NORTHSEA_WKT).build();
+        Constrain c2 = new Constrain.Builder("acadia, 1 year").polygon(ACADIA_WKT).startDate("2005-01-01").endDate("2006-01-01").build();
+        Constrain c3 = new Constrain.Builder("northsea, 1 year").polygon(NORTHSEA_WKT).startDate("2005-01-01").endDate("2006-01-01").build();
+        Constrain c4 = new Constrain.Builder("northsea, 1 year, #100").polygon(NORTHSEA_WKT).startDate("2005-01-01").endDate("2006-01-01").maxNumResults(100).build();
+        Constrain c5 = new Constrain.Builder("northsea, 1 week").polygon(NORTHSEA_WKT).startDate("2005-06-01").endDate("2005-06-07").build();
+        Constrain c6 = new Constrain.Builder("northsea, 1 day").polygon(NORTHSEA_WKT).startDate("2005-06-01").endDate("2005-06-02").build();
+        Constrain c7 = new Constrain.Builder("matchups 30k lat/lon/time").insitu(latLonTime).timeDelta(HOURS_IN_MILLIS * 3).build();
+        Constrain c8 = new Constrain.Builder("extracts 3 lat/lon").insitu(latLon).build();
+        Constrain c9 = new Constrain.Builder("extracts 3 lat/lon, 100#").insitu(latLon).maxNumResults(100).build();
+        Constrain c10 = new Constrain.Builder("extracts 3 lat/lon, 1 year").insitu(latLon).startDate("2005-01-01").endDate("2006-01-01").build();
+        Constrain c11 = new Constrain.Builder("1 year").startDate("2005-01-01").endDate("2006-01-01").build();
+        Constrain c12 = new Constrain.Builder("1 year, 100#").startDate("2005-01-01").endDate("2006-01-01").maxNumResults(100).build();
         return Arrays.asList(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12);
     }
 

@@ -1,4 +1,4 @@
-package com.bc.inventory.search.ng;
+package com.bc.inventory.search.coverage;
 
 import com.bc.inventory.utils.S2Integer;
 import com.google.common.geometry.S2CellUnion;

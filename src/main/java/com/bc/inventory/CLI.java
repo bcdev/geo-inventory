@@ -4,7 +4,7 @@ import com.bc.inventory.search.Constrain;
 import com.bc.inventory.search.FileStreamFactory;
 import com.bc.inventory.search.QueryResult;
 import com.bc.inventory.search.StreamFactory;
-import com.bc.inventory.search.ng.NgInventory;
+import com.bc.inventory.search.coverage.CoverageInventory;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,23 +55,23 @@ public class CLI {
     }
 
     private static void create(StreamFactory streamFactory, String csvFile) throws IOException {
-        NgInventory inventory = new NgInventory(streamFactory);
+        CoverageInventory inventory = new CoverageInventory(streamFactory);
         inventory.createIndex(csvFile);
     }
 
     private static void dump(StreamFactory streamFactory, String csvFile) throws IOException {
-        NgInventory inventory = new NgInventory(streamFactory);
+        CoverageInventory inventory = new CoverageInventory(streamFactory);
         inventory.loadIndex();
         inventory.writeDB(csvFile);
     }
 
     private static void update(StreamFactory streamFactory, String csvFile) throws IOException {
-        NgInventory inventory = new NgInventory(streamFactory);
+        CoverageInventory inventory = new CoverageInventory(streamFactory);
         inventory.updateIndex(csvFile);
     }
 
     private static void query(StreamFactory streamFactory, String[] args) throws IOException {
-        NgInventory inventory = new NgInventory(streamFactory);
+        CoverageInventory inventory = new CoverageInventory(streamFactory);
         inventory.loadIndex();
         Constrain constraints = parseConstraint(args);
         QueryResult queryResult = inventory.query(constraints);
@@ -85,19 +85,19 @@ public class CLI {
     }
 
     private static Constrain parseConstraint(String[] args) {
-        Constrain constrain = new Constrain();
+        Constrain.Builder cb = new Constrain.Builder();
         for (int i = 2; i < args.length; ) {
             String key = args[i++];
             String value = args[i++];
             switch (key) {
                 case "startTime":
-                    constrain.withStartDate(value);
+                    cb.startDate(value);
                     break;
                 case "endTime":
-                    constrain.withEndDate(value);
+                    cb.endDate(value);
                     break;
                 case "wkt":
-                    constrain.withPolygon(value);
+                    cb.polygon(value);
                     break;
                 default:
                     System.out.println("unknown parameters for query: " + key);
@@ -105,7 +105,7 @@ public class CLI {
                     System.exit(1);
             }
         }
-        return constrain;
+        return cb.build();
     }
 
     private static void printUsage() {

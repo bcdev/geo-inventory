@@ -1,4 +1,4 @@
-package com.bc.inventory.search.ng;
+package com.bc.inventory.search.coverage;
 
 import com.bc.geometry.s2.S2WKTReader;
 import com.google.common.geometry.S2Polygon;

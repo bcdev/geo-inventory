@@ -15,23 +15,26 @@ import java.util.List;
  * Search constrains
  */
 public class Constrain {
+
     private static final DateFormat DATE_FORMAT = DateUtils.createDateFormat("yyyy-MM-dd");
     private static final long DAY_IN_MILLIS = 24 * 60 * 60 * 1000L;
 
     private final String queryName;
-    private S2Polygon polygon;
-    private long start = -1;
-    private long end = -1;
-    private List<SimpleRecord> insitu;
-    private long delta = -1;
-    private int numResults = Integer.MAX_VALUE;
+    private final S2Polygon polygon;
+    private final long start;
+    private final long end;
+    private final SimpleRecord[] insituRecords;
+    private final long timeDelta;
+    private final int maxNumResults;
 
-    public Constrain() {
-        this("");
-    }
-
-    public Constrain(String queryName) {
+    private Constrain(String queryName, S2Polygon polygon, long start, long end, SimpleRecord[] insituRecords, long timeDelta, int maxNumResults) {
         this.queryName = queryName;
+        this.polygon = polygon;
+        this.start = start;
+        this.end = end;
+        this.insituRecords = insituRecords;
+        this.timeDelta = timeDelta;
+        this.maxNumResults = maxNumResults;
     }
 
     public String getQueryName() {
@@ -50,76 +53,98 @@ public class Constrain {
         return end;
     }
 
-    public List<SimpleRecord> getInsitu() {
-        return insitu;
+    public SimpleRecord[] getInsituRecords() {
+        return insituRecords;
     }
 
-    public long getDelta() {
-        return delta;
+    public long getTimeDelta() {
+        return timeDelta;
     }
 
-    public int getNumResults() {
-        return numResults;
+    public int getMaxNumResults() {
+        return maxNumResults;
     }
 
-    public Constrain withPolygon(S2Polygon polygon) {
-        this.polygon = polygon;
-        return this;
-    }
+    public static class Builder {
 
-    public Constrain withPolygon(String polygonWKT) {
-        S2WKTReader wktReader = new S2WKTReader();
-        Object object = wktReader.read(polygonWKT);
-        if (!(object instanceof S2Polygon)) {
-            throw new IllegalArgumentException("Given polygonWKT is not a valid polygon.");
+        private final String queryName;
+        private S2Polygon s2Polygon = null;
+        private long start = -1;
+        private long end = -1;
+        private SimpleRecord[] insituRecords = new SimpleRecord[0];
+        private long timeDelta = -1;
+        private int maxNumResults = Integer.MAX_VALUE;
+
+        public Builder() {
+            this("");
         }
-        this.polygon = (S2Polygon) object;
-        return this;
-    }
 
-    public Constrain withStartDate(String start) {
-        this.start = dateAsLong(start);
-        return this;
-    }
-
-    public Constrain withEndDate(String end) {
-        this.end = dateAsLong(end);
-        if (this.end != -1) {
-            // end date is inclusive
-            this.end += DAY_IN_MILLIS;
+        public Builder(String queryName) {
+            this.queryName = queryName;
         }
-        return this;
-    }
 
-    public Constrain withStartDate(Date start) {
-        if (start != null) {
-            this.start = start.getTime();
+        public Constrain.Builder polygon(S2Polygon polygon) {
+            this.s2Polygon = polygon;
+            return this;
         }
-        return this;
-    }
 
-    public Constrain withEndDate(Date end) {
-        if (end != null) {
-            this.end = end.getTime();
-            // end date is inclusive
-            this.end += DAY_IN_MILLIS;
+        public Constrain.Builder polygon(String polygonWKT) {
+            S2WKTReader wktReader = new S2WKTReader();
+            Object object = wktReader.read(polygonWKT);
+            if (!(object instanceof S2Polygon)) {
+                throw new IllegalArgumentException("Given polygonWKT is not a valid polygon.");
+            }
+            return polygon((S2Polygon) object);
         }
-        return this;
-    }
 
-    public Constrain withInsitu(List<SimpleRecord> insitu) {
-        this.insitu = insitu;
-        return this;
-    }
+        public Constrain.Builder startDate(String start) {
+            this.start = dateAsLong(start);
+            return this;
+        }
 
-    public Constrain withDeltaTime(long delta) {
-        this.delta = delta;
-        return this;
-    }
+        public Constrain.Builder startDate(Date start) {
+            if (start != null) {
+                this.start = start.getTime();
+            }
+            return this;
+        }
 
-    public Constrain withNumResults(int numResults) {
-        this.numResults = numResults;
-        return this;
+        public Builder endDate(String end) {
+            this.end = dateAsLong(end);
+            if (this.end != -1) {
+                // end date is inclusive
+                this.end += DAY_IN_MILLIS;
+            }
+            return this;
+        }
+
+        public Constrain.Builder endDate(Date end) {
+            if (end != null) {
+                this.end = end.getTime();
+                // end date is inclusive
+                this.end += DAY_IN_MILLIS;
+            }
+            return this;
+        }
+
+        public Constrain.Builder insitu(List<SimpleRecord> insituRecords) {
+            this.insituRecords = insituRecords.toArray(new SimpleRecord[0]);
+            return this;
+        }
+
+        public Constrain.Builder timeDelta(long timeDelta) {
+            this.timeDelta = timeDelta;
+            return this;
+        }
+
+        public Constrain.Builder maxNumResults(int maxNumResults) {
+            this.maxNumResults = maxNumResults;
+            return this;
+        }
+
+        public Constrain build() {
+            return new Constrain(queryName, s2Polygon, start, end, insituRecords, timeDelta, maxNumResults);
+        }
     }
 
     private static long dateAsLong(String dateString) {

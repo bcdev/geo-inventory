@@ -1,4 +1,4 @@
-package com.bc.inventory.search.ng;
+package com.bc.inventory.search.coverage;
 
 import com.google.common.geometry.R1Interval;
 import com.google.common.geometry.S1Interval;

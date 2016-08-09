@@ -51,20 +51,20 @@ public class CsvFastInventory implements Inventory {
 
     @Override
     public QueryResult query(Constrain constrain) {
-        List<SimpleRecord> insitu = constrain.getInsitu();
+        SimpleRecord[] insituRecords = constrain.getInsituRecords();
         long start = constrain.getStartTime();
         long end = constrain.getEndTime();
         S2Polygon polygon = constrain.getPolygon();
 
-        if (insitu == null) {
+        if (insituRecords.length == 0) {
             return new QueryResult(test(start, end, null, polygon));
         } else {
             Set<String> results = new HashSet<>();
-            for (SimpleRecord insituRecord : insitu) {
-                long delta = constrain.getDelta();
-                if (delta != -1) {
-                    start = insituRecord.getTime() - delta;
-                    end = insituRecord.getTime() + delta;
+            for (SimpleRecord insituRecord : insituRecords) {
+                long timeDelta = constrain.getTimeDelta();
+                if (timeDelta != -1) {
+                    start = insituRecord.getTime() - timeDelta;
+                    end = insituRecord.getTime() + timeDelta;
                 }
                 results.addAll(test(start, end, insituRecord.getAsPoint(), null));
             }
