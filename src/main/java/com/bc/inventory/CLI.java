@@ -62,7 +62,7 @@ public class CLI {
     private static void dump(StreamFactory streamFactory, String csvFile) throws IOException {
         CoverageInventory inventory = new CoverageInventory(streamFactory);
         inventory.loadIndex();
-        inventory.writeDB(csvFile);
+        inventory.dumpDB(csvFile);
     }
 
     private static void update(StreamFactory streamFactory, String csvFile) throws IOException {

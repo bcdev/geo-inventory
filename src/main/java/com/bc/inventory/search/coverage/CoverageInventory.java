@@ -110,7 +110,7 @@ public class CoverageInventory implements Inventory {
         return startTimes.length;
     }
 
-    public void writeDB(String csvFile) throws IOException {
+    public void dumpDB(String csvFile) throws IOException {
         try (
                 DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME));
                 Writer csvWriter = new BufferedWriter(new FileWriter(csvFile))
@@ -133,11 +133,12 @@ public class CoverageInventory implements Inventory {
         SimpleRecord[] insituRecords = constrain.getInsituRecords();
         int start = IndexCreator.startTimeInMin(constrain.getStartTime());
         int end = IndexCreator.endTimeInMin(constrain.getEndTime());
-        S2Polygon polygon = constrain.getPolygon();
         int maxNumResults = constrain.getMaxNumResults();
 
         if (insituRecords.length == 0) {
-            List<Integer> productIDs = testOnIndex(start, end, null, polygon);
+            S2Polygon polygon = constrain.getPolygon();
+            boolean useOnlyProductStart = constrain.useOnlyProductStart();
+            List<Integer> productIDs = testOnIndex(start, end, useOnlyProductStart, null, polygon);
             if (indexOnly) {
                 return new QueryResult(testPolygonOnData(productIDs, null, maxNumResults));
             } else {
@@ -147,12 +148,14 @@ public class CoverageInventory implements Inventory {
             Map<Integer, List<S2Point>> candidatesMap = new HashMap<>();
             for (SimpleRecord insituRecord : insituRecords) {
                 long delta = constrain.getTimeDelta();
+                boolean useOnlyProductStart = constrain.useOnlyProductStart();
                 if (delta != -1) {
                     start = IndexCreator.startTimeInMin(insituRecord.getTime() - delta);
                     end = IndexCreator.endTimeInMin(insituRecord.getTime() + delta);
+                    useOnlyProductStart = false; // for time-matchups always precise time checks
                 }
                 S2Point s2Point = insituRecord.getAsPoint();
-                List<Integer> productIDs = testOnIndex(start, end, s2Point, null);
+                List<Integer> productIDs = testOnIndex(start, end, useOnlyProductStart, s2Point, null);
                 if (!productIDs.isEmpty()) {
                     for (Integer match : productIDs) {
                         List<S2Point> candidateProducts = candidatesMap.get(match);
@@ -178,7 +181,7 @@ public class CoverageInventory implements Inventory {
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
-    private List<Integer> testOnIndex(int startTime, int endTime, S2Point point, S2Polygon polygon) {
+    private List<Integer> testOnIndex(int startTime, int endTime, boolean useOnlyProductStart, S2Point point, S2Polygon polygon) {
         S2CellId s2CellId = null;
         int[] polygonIntIds = null;
         List<Integer> results = new ArrayList<>();
@@ -187,34 +190,46 @@ public class CoverageInventory implements Inventory {
             return results;
         }
 
-        boolean finishedWithInsitu = false;
-        while (!finishedWithInsitu) {
+        while (true) {
             if (productIndex >= startTimes.length) {
-                finishedWithInsitu = true;
-            } else if (endTime != -1 && startTimes[productIndex] > endTime) {
-                finishedWithInsitu = true;
-            } else if (startTime != -1 && endTimes[productIndex] < startTime) {
-                // this product end too early, but maybe the next will be longer
+                break;
+            }
+            if (useOnlyProductStart) {
+                if (endTime != -1 && startTimes[productIndex] >= endTime) {
+                    break;
+                } else if (startTime != -1 && startTimes[productIndex] < startTime) {
+                    // this product starts too early, skip
+                    productIndex++;
+                    continue;
+                }
             } else {
-                // time matches, now test geo
-                if (point != null) {
-                    if (s2CellId == null) {
-                        s2CellId = S2CellId.fromPoint(point);
-                    }
-                    int[] coverage = coverages[coverageIndices[productIndex]];
-                    if (S2Integer.containsCellId(coverage, s2CellId)) {
-                        results.add(productIndex);
-                    }
-                } else if (polygon != null) {
-                    if (polygonIntIds == null) {
-                        polygonIntIds = S2Integer.createS2IntIds(polygon, maxLevel);
-                    }
-                    if (S2Integer.intersectsCellUnionFast(polygonIntIds, coverages[coverageIndices[productIndex]])) {
-                        results.add(productIndex);
-                    }
-                } else {
+                if (endTime != -1 && startTimes[productIndex] > endTime) {
+                    break;
+                } else if (startTime != -1 && endTimes[productIndex] < startTime) {
+                    // this product ends too early, but the next could be longer
+                    productIndex++;
+                    continue;
+                }
+            }
+
+            // time matches, now test geo
+            if (point != null) {
+                if (s2CellId == null) {
+                    s2CellId = S2CellId.fromPoint(point);
+                }
+                int[] coverage = coverages[coverageIndices[productIndex]];
+                if (S2Integer.containsCellId(coverage, s2CellId)) {
                     results.add(productIndex);
                 }
+            } else if (polygon != null) {
+                if (polygonIntIds == null) {
+                    polygonIntIds = S2Integer.createS2IntIds(polygon, maxLevel);
+                }
+                if (S2Integer.intersectsCellUnionFast(polygonIntIds, coverages[coverageIndices[productIndex]])) {
+                    results.add(productIndex);
+                }
+            } else {
+                results.add(productIndex);
             }
             productIndex++;
         }
@@ -292,5 +307,21 @@ public class CoverageInventory implements Inventory {
             }
         }
         return low == 0 ? low : low - 1;  // key not found
+    }
+
+    // for debugging
+    private void printProducts(List<Integer> productIDs) {
+        Collections.sort(productIDs, (o1, o2) -> Integer.compare(dataOffsets[o1], dataOffsets[o2]));
+        try (DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME))) {
+            for (Integer productID : productIDs) {
+                reader.seekTo(dataOffsets[productID]);
+                String path = reader.readPath();
+                String start = DATE_FORMAT.format(new Date(startTimes[productID] * MINUTES_PER_MILLI));
+                String end = DATE_FORMAT.format(new Date(endTimes[productID] * MINUTES_PER_MILLI));
+                System.out.printf("%s  %s  %s%n", start, end, path);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

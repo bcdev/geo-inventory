@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -59,7 +58,7 @@ public class Benchmark {
 
 //            testQueries("NgI3", mt, new CoverageInventory(streamFactory, true, 3));
             testQueries("Ng3.1", mt, new CoverageInventory(streamFactory, false, 3));
-            testQueries("Ng3.2", mt, new CoverageInventory(streamFactory, false, 3));
+//            testQueries("Ng3.2", mt, new CoverageInventory(streamFactory, false, 3));
         }
 
         {
@@ -67,8 +66,8 @@ public class Benchmark {
 //            testIndexCreation("Ng5", mt, productListFilename, new NgInventory(streamFactory, false, 5));
 
 //            testQueries("NgI5", mt, new CoverageInventory(streamFactory, true, 5));
-            testQueries("Ng5.1", mt, new CoverageInventory(streamFactory, false, 5));
-            testQueries("Ng5.2", mt, new CoverageInventory(streamFactory, false, 5));
+//            testQueries("Ng5.1", mt, new CoverageInventory(streamFactory, false, 5));
+//            testQueries("Ng5.2", mt, new CoverageInventory(streamFactory, false, 5));
         }
         mt.printMeasurements();
     }
@@ -95,19 +94,27 @@ public class Benchmark {
         List<SimpleRecord> latLonTime = readInsituRecords(new File(baseDir, "insitu.csv"));
         List<SimpleRecord> latLon = readInsituRecords(new File(baseDir, "extracts.csv"));
 
-        Constrain c1 = new Constrain.Builder("northsea").polygon(NORTHSEA_WKT).build();
-        Constrain c2 = new Constrain.Builder("acadia, 1 year").polygon(ACADIA_WKT).startDate("2005-01-01").endDate("2006-01-01").build();
-        Constrain c3 = new Constrain.Builder("northsea, 1 year").polygon(NORTHSEA_WKT).startDate("2005-01-01").endDate("2006-01-01").build();
-        Constrain c4 = new Constrain.Builder("northsea, 1 year, #100").polygon(NORTHSEA_WKT).startDate("2005-01-01").endDate("2006-01-01").maxNumResults(100).build();
-        Constrain c5 = new Constrain.Builder("northsea, 1 week").polygon(NORTHSEA_WKT).startDate("2005-06-01").endDate("2005-06-07").build();
-        Constrain c6 = new Constrain.Builder("northsea, 1 day").polygon(NORTHSEA_WKT).startDate("2005-06-01").endDate("2005-06-02").build();
-        Constrain c7 = new Constrain.Builder("matchups 30k lat/lon/time").insitu(latLonTime).timeDelta(HOURS_IN_MILLIS * 3).build();
-        Constrain c8 = new Constrain.Builder("extracts 3 lat/lon").insitu(latLon).build();
-        Constrain c9 = new Constrain.Builder("extracts 3 lat/lon, 100#").insitu(latLon).maxNumResults(100).build();
-        Constrain c10 = new Constrain.Builder("extracts 3 lat/lon, 1 year").insitu(latLon).startDate("2005-01-01").endDate("2006-01-01").build();
-        Constrain c11 = new Constrain.Builder("1 year").startDate("2005-01-01").endDate("2006-01-01").build();
-        Constrain c12 = new Constrain.Builder("1 year, 100#").startDate("2005-01-01").endDate("2006-01-01").maxNumResults(100).build();
-        return Arrays.asList(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12);
+        List<Constrain.Builder> cbs = new ArrayList<>();
+        cbs.add(new Constrain.Builder("northsea").polygon(NORTHSEA_WKT));
+        cbs.add(new Constrain.Builder("acadia, 1 year").polygon(ACADIA_WKT).startDate("2005-01-01").endDate("2006-01-01"));
+        cbs.add(new Constrain.Builder("northsea, 1 year").polygon(NORTHSEA_WKT).startDate("2005-01-01").endDate("2006-01-01"));
+        cbs.add(new Constrain.Builder("northsea, 1 year, #100").polygon(NORTHSEA_WKT).startDate("2005-01-01").endDate("2006-01-01").maxNumResults(100));
+        cbs.add(new Constrain.Builder("northsea, 1 week").polygon(NORTHSEA_WKT).startDate("2005-06-01").endDate("2005-06-07"));
+        cbs.add(new Constrain.Builder("northsea, 1 day").polygon(NORTHSEA_WKT).startDate("2005-06-01").endDate("2005-06-01"));
+        cbs.add(new Constrain.Builder("matchups 30k lat/lon/time").insitu(latLonTime).timeDelta(HOURS_IN_MILLIS * 3));
+        cbs.add(new Constrain.Builder("extracts 3 lat/lon").insitu(latLon));
+        cbs.add(new Constrain.Builder("extracts 3 lat/lon, 100#").insitu(latLon).maxNumResults(100));
+        cbs.add(new Constrain.Builder("extracts 3 lat/lon, 1 year").insitu(latLon).startDate("2005-01-01").endDate("2006-01-01"));
+        cbs.add(new Constrain.Builder("1 year").startDate("2005-01-01").endDate("2006-01-01"));
+        cbs.add(new Constrain.Builder("1 year, 100#").startDate("2005-01-01").endDate("2006-01-01").maxNumResults(100));
+        cbs.add(new Constrain.Builder("1 day").startDate("2005-06-01").endDate("2005-06-01"));
+        cbs.add(new Constrain.Builder("1 day (only start)").startDate("2005-06-01").endDate("2005-06-01").useOnlyProductStartDate(true));
+
+        List<Constrain> constrains = new ArrayList<>();
+        for (Constrain.Builder cb : cbs) {
+            constrains.add(cb.build());
+        }
+        return constrains;
     }
 
     private static List<SimpleRecord> readInsituRecords(File file) throws Exception {

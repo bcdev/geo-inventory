@@ -23,15 +23,17 @@ public class Constrain {
     private final S2Polygon polygon;
     private final long start;
     private final long end;
+    private final boolean useOnlyProductStart;
     private final SimpleRecord[] insituRecords;
     private final long timeDelta;
     private final int maxNumResults;
 
-    private Constrain(String queryName, S2Polygon polygon, long start, long end, SimpleRecord[] insituRecords, long timeDelta, int maxNumResults) {
+    private Constrain(String queryName, S2Polygon polygon, long start, long end, boolean useOnlyProductStart, SimpleRecord[] insituRecords, long timeDelta, int maxNumResults) {
         this.queryName = queryName;
         this.polygon = polygon;
         this.start = start;
         this.end = end;
+        this.useOnlyProductStart = useOnlyProductStart;
         this.insituRecords = insituRecords;
         this.timeDelta = timeDelta;
         this.maxNumResults = maxNumResults;
@@ -51,6 +53,10 @@ public class Constrain {
 
     public long getEndTime() {
         return end;
+    }
+
+    public boolean useOnlyProductStart() {
+        return useOnlyProductStart;
     }
 
     public SimpleRecord[] getInsituRecords() {
@@ -74,6 +80,7 @@ public class Constrain {
         private SimpleRecord[] insituRecords = new SimpleRecord[0];
         private long timeDelta = -1;
         private int maxNumResults = Integer.MAX_VALUE;
+        private boolean useOnlyProductStart;
 
         public Builder() {
             this("");
@@ -127,6 +134,11 @@ public class Constrain {
             return this;
         }
 
+        public Constrain.Builder useOnlyProductStartDate(boolean onlyProductStart) {
+            this.useOnlyProductStart = onlyProductStart;
+            return this;
+        }
+
         public Constrain.Builder insitu(List<SimpleRecord> insituRecords) {
             this.insituRecords = insituRecords.toArray(new SimpleRecord[0]);
             return this;
@@ -143,7 +155,7 @@ public class Constrain {
         }
 
         public Constrain build() {
-            return new Constrain(queryName, s2Polygon, start, end, insituRecords, timeDelta, maxNumResults);
+            return new Constrain(queryName, s2Polygon, start, end, useOnlyProductStart, insituRecords, timeDelta, maxNumResults);
         }
     }
 
