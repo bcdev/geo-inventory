@@ -37,7 +37,7 @@ public interface Record {
      *         The location is usually represented in form of one or more attribute values.
      *         This is the location of the corresponding reference record.
      */
-    Point2D.Float getLocation();
+    Point2D getLocation();
 
     /**
      * @return The UTC time in milliseconds or {@code null} if the time is not available (see {@link Header#hasTime()}).

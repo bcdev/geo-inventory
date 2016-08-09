@@ -126,7 +126,7 @@ public class Benchmark {
                 if (hasTime) {
                     records.add(new SimpleRecord(record.getTime().getTime(), record.getLocation()));
                 } else {
-                    records.add(new SimpleRecord(-1, record.getLocation()));
+                    records.add(new SimpleRecord(record.getLocation()));
                 }
             }
             return records;

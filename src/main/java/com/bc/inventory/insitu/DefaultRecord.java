@@ -29,16 +29,16 @@ import java.util.Date;
 public class DefaultRecord implements Record {
 
     private final int id;
-    private final Point2D.Float location;
+    private final Point2D location;
     private final Date time;
     private final Object[] attributeValues;
     private final Object[] annotationValues;
 
-    public DefaultRecord(int id, Point2D.Float location, Date time, Object[] attributeValues) {
+    public DefaultRecord(int id, Point2D location, Date time, Object[] attributeValues) {
         this(id, location, time, attributeValues, new Object[]{""});
     }
 
-    public DefaultRecord(int id, Point2D.Float location, Date time, Object[] attributeValues, Object[] annotationValues) {
+    public DefaultRecord(int id, Point2D location, Date time, Object[] attributeValues, Object[] annotationValues) {
         this.id = id;
         this.location = location;
         this.time = time;
@@ -52,7 +52,7 @@ public class DefaultRecord implements Record {
     }
 
     @Override
-    public Point2D.Float getLocation() {
+    public Point2D getLocation() {
         return location;
     }
 

@@ -197,15 +197,15 @@ public class CsvRecordSource implements RecordSource {
 
             final Object[] values = toObjects(textValues, attributeTypes);
 
-            final Point2D.Float location;
+            final Point2D.Double location;
             if (! header.hasLocation()) {
                 String msg = "missing lat and lon columns in header of point data file (one of " +
                         csvLineReader.getLatNames() + " and one of " + csvLineReader.getLonNames() + " expected)";
                 throw new IllegalArgumentException(msg);
             } else if (values[latIndex] instanceof Number && values[lonIndex] instanceof Number) {
-                float y = ((Number) values[latIndex]).floatValue();
-                float x = ((Number) values[lonIndex]).floatValue();
-                location = new Point2D.Float(x, y);
+                double y = ((Number) values[latIndex]).doubleValue();
+                double x = ((Number) values[lonIndex]).doubleValue();
+                location = new Point2D.Double(x, y);
                 if (location.getY() < -90.0f || location.getY() > 90.0f || location.getX() < -180.0f || location.getX() > 360.0f) {
                     throw new IllegalArgumentException("lat and lon value '" + textValues[latIndex]
                                            + "' and '" + textValues[lonIndex]

@@ -28,9 +28,13 @@ public class SimpleRecord {
     public static final DateFormat INSITU_DATE_FORMAT = DateUtils.createDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private final long time;
-    private final Point2D.Float location;
+    private final Point2D location;
 
-    public SimpleRecord(long time, Point2D.Float location) {
+    public SimpleRecord(Point2D location) {
+        this(-1L, location);
+    }
+
+    public SimpleRecord(long time, Point2D location) {
         this.time = time;
         this.location = location;
     }
@@ -39,7 +43,7 @@ public class SimpleRecord {
         return time;
     }
 
-    public Point2D.Float getLocation() {
+    public Point2D getLocation() {
         return location;
     }
 
