@@ -110,6 +110,10 @@ public class CoverageInventory implements Inventory {
         return startTimes.length;
     }
 
+    public boolean hasIndex() throws IOException {
+        return  streamFactory.exists(INDEX_FILENAME) && streamFactory.exists(DATA_FILENAME);
+    }
+
     public void dumpDB(String csvFile) throws IOException {
         try (
                 DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME));

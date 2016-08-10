@@ -1,12 +1,14 @@
 package com.bc.inventory.search;
 
 import com.bc.geometry.s2.S2WKTReader;
+import com.bc.geometry.s2.S2WKTWriter;
 import com.bc.inventory.utils.DateUtils;
 import com.bc.inventory.utils.SimpleRecord;
 import com.google.common.geometry.S2Polygon;
 
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -69,6 +71,21 @@ public class Constrain {
 
     public int getMaxNumResults() {
         return maxNumResults;
+    }
+
+    @Override
+    public String toString() {
+        String wkt = (polygon != null) ? S2WKTWriter.write(polygon) : "null";
+        return "Constrain{" +
+                "queryName='" + queryName + '\'' +
+                ", polygon=" + wkt +
+                ", start=" + start +
+                ", end=" + end +
+                ", useOnlyProductStart=" + useOnlyProductStart +
+                ", insituRecords=" + Arrays.toString(insituRecords) +
+                ", timeDelta=" + timeDelta +
+                ", maxNumResults=" + maxNumResults +
+                '}';
     }
 
     public static class Builder {

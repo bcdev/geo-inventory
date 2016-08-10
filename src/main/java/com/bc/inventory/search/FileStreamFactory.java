@@ -32,4 +32,9 @@ public class FileStreamFactory implements StreamFactory {
         }
         return new FileOutputStream(file);
     }
+
+    @Override
+    public boolean exists(String name) {
+        return new File(baseDir, name).exists();
+    }
 }
