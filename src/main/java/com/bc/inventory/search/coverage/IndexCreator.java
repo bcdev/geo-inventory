@@ -54,6 +54,7 @@ class IndexCreator {
                 reader.seekTo(indexRecord.dataOffset);
                 indexRecord.polygonBytes = reader.readPolygonBytes();
                 indexRecord.path = reader.readPath();
+                allPaths.add(indexRecord.path);
             }
         }
     }
