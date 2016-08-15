@@ -9,7 +9,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Creates or updates a coverage index
@@ -21,11 +23,13 @@ class IndexCreator {
     private final int maxLevel;
     private final List<S2Integer.Coverage> coverages;
     private final List<IndexRecord> indexRecords;
+    private final Set<String> allPaths;
 
     public IndexCreator(int maxLevel) {
         this.maxLevel = maxLevel;
         indexRecords = new ArrayList<>();
         coverages = new ArrayList<>();
+        allPaths = new HashSet<>();
     }
 
     public void loadExistingIndex(InputStream indexIS, InputStream dataIS) throws IOException {
@@ -60,10 +64,14 @@ class IndexCreator {
         int coverageId = getUniqeCoverageId(s2IntCoverage);
         byte[] polygonBytes = DataFile.polygon2byte(s2Polygon);
 
-        indexRecords.add(new IndexRecord(path, startTimeInMin(startTime), endTimeInMin(endTime), coverageId, polygonBytes));
-
-        if (indexRecords.size() % 10000 == 0) {
-            System.out.println("#indexRecords: " + indexRecords.size());
+        if (!allPaths.contains(path)) {
+            IndexRecord record = new IndexRecord(path,
+                                                 startTimeInMin(startTime),
+                                                 endTimeInMin(endTime),
+                                                 coverageId,
+                                                 polygonBytes);
+            indexRecords.add(record);
+            allPaths.add(path);
         }
     }
 
@@ -74,6 +82,7 @@ class IndexCreator {
                 indexRecords.remove(i);
             }
         }
+        allPaths.remove(path);
     }
 
     private int getUniqeCoverageId(S2Integer.Coverage s2IntCoverage) {
