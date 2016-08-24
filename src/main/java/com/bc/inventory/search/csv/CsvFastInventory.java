@@ -7,6 +7,7 @@ import com.bc.inventory.utils.SimpleRecord;
 import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,11 +22,11 @@ import java.util.Set;
  */
 public class CsvFastInventory implements Inventory {
 
-    private final String productListFilename;
+    private final File productListFile;
     private List<CsvRecord> csvRecordList;
 
-    public CsvFastInventory(String productListFilename) {
-        this.productListFilename = productListFilename;
+    public CsvFastInventory(File productListFile) {
+        this.productListFile = productListFile;
     }
 
     @Override
@@ -42,7 +43,7 @@ public class CsvFastInventory implements Inventory {
 
     @Override
     public int loadIndex() throws IOException {
-        try (InputStream inputStream = new FileInputStream(productListFilename)) {
+        try (InputStream inputStream = new FileInputStream(productListFile)) {
             csvRecordList = CsvRecordReader.readAllRecords(inputStream);
             Collections.sort(csvRecordList, (o1, o2) -> Long.compare(o1.getStartTime(), o2.getStartTime()));
             return csvRecordList.size();
@@ -76,9 +77,15 @@ public class CsvFastInventory implements Inventory {
 
     private List<String> test(long startTime, long endTime, S2Point point, S2Polygon polygon) {
         List<String> results = new ArrayList<>();
-        int productIndex = getIndexForTime(startTime);
-        if (productIndex == -1) {
-            return results;
+
+        int productIndex;
+        if (startTime == -1) {
+            productIndex = 0;
+        } else {
+            productIndex = getIndexForTime(startTime);
+            if (productIndex == -1) {
+                return results;
+            }
         }
 
         boolean finishedWithInsitu = false;

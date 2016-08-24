@@ -111,6 +111,9 @@ public class CsvRecordReader {
     }
 
     private static long parseDateTime(String split) throws ParseException {
+        if (split.isEmpty() || split.equalsIgnoreCase("null")) {
+            return -1;
+        }
         return DATE_FORMAT.parse(DateUtils.getNoFractionString(split)).getTime();
     }
 

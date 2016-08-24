@@ -3,6 +3,8 @@ package com.bc.inventory.search;
 import com.bc.inventory.insitu.CsvRecordSource;
 import com.bc.inventory.insitu.Record;
 import com.bc.inventory.search.coverage.CoverageInventory;
+import com.bc.inventory.search.csv.CsvFastInventory;
+import com.bc.inventory.search.csv.CsvInventory;
 import com.bc.inventory.utils.Measurement;
 import com.bc.inventory.utils.MeasurementTable;
 import com.bc.inventory.utils.SimpleRecord;
@@ -41,28 +43,30 @@ public class Benchmark {
 //        measure("meris2005");
 //        measure("modis2005");
 
-        measure("meris");
-        measure("modis");
+//        measure("meris");
+//        measure("modis");
+        measure("GUF");
 
     }
 
     private static void measure(String sensor) throws IOException {
         MeasurementTable mt = new MeasurementTable(sensor);
-        String productListFilename = new File(baseDir, sensor + "_products_list.csv").getAbsolutePath();
+        String productListFilename = sensor + "_products_list.csv";
+        File productListFile = new File(baseDir, productListFilename);
 
-//        testQueries("CSV", mt, new CsvInventory(productListFilename));
-//        testQueries("CsvFast", mt, new CsvFastInventory(productListFilename));
+        testQueries("CSV", mt, new CsvInventory(productListFile));
+        testQueries("CsvFast", mt, new CsvFastInventory(productListFile));
         {
-            StreamFactory streamFactory = new FileStreamFactory(new File(baseDir, sensor + "_l3"));
-//            testIndexCreation("Ng3", mt, productListFilename, new NgInventory(streamFactory, false, 3));
+            StreamFactory streamFactory = new FileStreamFactory(new File(baseDir, sensor));
+            testIndexCreation("Ng3_Build", mt, "../"+productListFilename, new CoverageInventory(streamFactory, false, 3));
 
-//            testQueries("NgI3", mt, new CoverageInventory(streamFactory, true, 3));
+            testQueries("Ng3_Index", mt, new CoverageInventory(streamFactory, true, 3));
             testQueries("Ng3.1", mt, new CoverageInventory(streamFactory, false, 3));
-//            testQueries("Ng3.2", mt, new CoverageInventory(streamFactory, false, 3));
+            testQueries("Ng3.2", mt, new CoverageInventory(streamFactory, false, 3));
         }
 
         {
-            StreamFactory streamFactory = new FileStreamFactory(new File(baseDir, sensor + "_l5"));
+//            StreamFactory streamFactory = new FileStreamFactory(new File(baseDir, sensor + "_l5"));
 //            testIndexCreation("Ng5", mt, productListFilename, new NgInventory(streamFactory, false, 5));
 
 //            testQueries("NgI5", mt, new CoverageInventory(streamFactory, true, 5));

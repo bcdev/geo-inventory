@@ -7,6 +7,7 @@ import com.bc.inventory.utils.SimpleRecord;
 import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,11 +23,11 @@ import java.util.Set;
  */
 public class CsvInventory implements Inventory {
 
-    private final String productListFilename;
+    private final File productListFile;
     private List<CsvRecord> csvRecordList;
 
-    public CsvInventory(String productListFilename) {
-        this.productListFilename = productListFilename;
+    public CsvInventory(File productListFile) {
+        this.productListFile = productListFile;
     }
 
     @Override
@@ -43,7 +44,7 @@ public class CsvInventory implements Inventory {
 
     @Override
     public int loadIndex() throws IOException {
-        try (InputStream inputStream = new FileInputStream(productListFilename)) {
+        try (InputStream inputStream = new FileInputStream(productListFile)) {
             csvRecordList = CsvRecordReader.readAllRecords(inputStream);
             return csvRecordList.size();
         }

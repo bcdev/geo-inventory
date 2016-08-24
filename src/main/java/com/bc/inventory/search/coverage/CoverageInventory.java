@@ -189,9 +189,14 @@ public class CoverageInventory implements Inventory {
         S2CellId s2CellId = null;
         int[] polygonIntIds = null;
         List<Integer> results = new ArrayList<>();
-        int productIndex = getIndexForTime(startTime);
-        if (productIndex == -1) {
-            return results;
+        int productIndex;
+        if (startTime == -1) {
+            productIndex = 0;
+        } else {
+            productIndex = getIndexForTime(startTime);
+            if (productIndex == -1) {
+                return results;
+            }
         }
 
         while (true) {
