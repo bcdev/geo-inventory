@@ -135,8 +135,8 @@ public class CoverageInventory implements Inventory {
     @Override
     public QueryResult query(Constrain constrain) {
         SimpleRecord[] insituRecords = constrain.getInsituRecords();
-        int start = IndexCreator.startTimeInMin(constrain.getStartTime());
-        int end = IndexCreator.endTimeInMin(constrain.getEndTime());
+        int start = IndexCreator.startTimeInMin(constrain.getStartTime());   // can be -1
+        int end = IndexCreator.endTimeInMin(constrain.getEndTime());         // can be -1
         int maxNumResults = constrain.getMaxNumResults();
 
         if (insituRecords.length == 0) {
@@ -153,13 +153,22 @@ public class CoverageInventory implements Inventory {
             for (SimpleRecord insituRecord : insituRecords) {
                 long delta = constrain.getTimeDelta();
                 boolean useOnlyProductStart = constrain.useOnlyProductStart();
-                if (delta != -1) {
-                    start = IndexCreator.startTimeInMin(insituRecord.getTime() - delta);
-                    end = IndexCreator.endTimeInMin(insituRecord.getTime() + delta);
+                long insituRecordTime = insituRecord.getTime();
+                int insituStart = start;
+                int insituEnd = end;
+                if (delta != -1 && insituRecordTime != -1) {
+                    insituStart = IndexCreator.startTimeInMin(insituRecordTime - delta);
+                    insituEnd = IndexCreator.endTimeInMin(insituRecordTime + delta);
+                    if (end != -1 && end < insituStart) {
+                        continue;
+                    }
+                    if (start != -1 && start > insituEnd) {
+                        continue;
+                    }
                     useOnlyProductStart = false; // for time-matchups always precise time checks
                 }
                 S2Point s2Point = insituRecord.getAsPoint();
-                List<Integer> productIDs = testOnIndex(start, end, useOnlyProductStart, s2Point, null);
+                List<Integer> productIDs = testOnIndex(insituStart, insituEnd, useOnlyProductStart, s2Point, null);
                 if (!productIDs.isEmpty()) {
                     for (Integer match : productIDs) {
                         List<S2Point> candidateProducts = candidatesMap.get(match);
