@@ -31,6 +31,7 @@ public class CLI {
     public static void main(String[] args) throws IOException {
         if (args.length < 2) {
             printUsage();
+            System.exit(1);
         }
         String mode = args[0].toLowerCase();
         String dbDIR = args[1];
