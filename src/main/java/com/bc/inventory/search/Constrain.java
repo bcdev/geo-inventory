@@ -82,7 +82,7 @@ public class Constrain {
                 ", start=" + start +
                 ", end=" + end +
                 ", useOnlyProductStart=" + useOnlyProductStart +
-                ", insituRecords=" + Arrays.toString(insituRecords) +
+                ", insituRecords=" + insituRecords.length +
                 ", timeDelta=" + timeDelta +
                 ", maxNumResults=" + maxNumResults +
                 '}';

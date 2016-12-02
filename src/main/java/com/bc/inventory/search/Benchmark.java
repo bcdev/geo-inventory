@@ -1,19 +1,13 @@
 package com.bc.inventory.search;
 
-import com.bc.inventory.insitu.CsvRecordSource;
-import com.bc.inventory.insitu.Record;
+import com.bc.inventory.insitu.InsituRecords;
 import com.bc.inventory.search.coverage.CoverageInventory;
-import com.bc.inventory.search.csv.CsvFastInventory;
-import com.bc.inventory.search.csv.CsvInventory;
 import com.bc.inventory.utils.Measurement;
 import com.bc.inventory.utils.MeasurementTable;
 import com.bc.inventory.utils.SimpleRecord;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.LineNumberReader;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,9 +37,9 @@ public class Benchmark {
 //        measure("meris2005");
 //        measure("modis2005");
 
-//        measure("meris");
-//        measure("modis");
-        measure("GUF");
+        measure("meris_l3");
+        measure("modis_l3");
+//        measure("GUF");
 
     }
 
@@ -54,11 +48,11 @@ public class Benchmark {
         String productListFilename = sensor + "_products_list.csv";
         File productListFile = new File(baseDir, productListFilename);
 
-        testQueries("CSV", mt, new CsvInventory(productListFile));
-        testQueries("CsvFast", mt, new CsvFastInventory(productListFile));
+//        testQueries("CSV", mt, new CsvInventory(productListFile));
+//        testQueries("CsvFast", mt, new CsvFastInventory(productListFile));
         {
             StreamFactory streamFactory = new FileStreamFactory(new File(baseDir, sensor));
-            testIndexCreation("Ng3_Build", mt, "../"+productListFilename, new CoverageInventory(streamFactory, false, 3));
+//            testIndexCreation("Ng3_Build", mt, "../"+productListFilename, new CoverageInventory(streamFactory, false, 3));
 
             testQueries("Ng3_Index", mt, new CoverageInventory(streamFactory, true, 3));
             testQueries("Ng3.1", mt, new CoverageInventory(streamFactory, false, 3));
@@ -95,8 +89,8 @@ public class Benchmark {
     }
 
     private static List<Constrain> createConstrains() throws Exception {
-        List<SimpleRecord> latLonTime = readInsituRecords(new File(baseDir, "insitu.csv"));
-        List<SimpleRecord> latLon = readInsituRecords(new File(baseDir, "extracts.csv"));
+        List<SimpleRecord> latLonTime = InsituRecords.read(new File(baseDir, "insitu.csv"));
+        List<SimpleRecord> latLon = InsituRecords.read(new File(baseDir, "extracts.csv"));
 
         List<Constrain.Builder> cbs = new ArrayList<>();
         cbs.add(new Constrain.Builder("northsea").polygon(NORTHSEA_WKT));
@@ -119,21 +113,5 @@ public class Benchmark {
             constrains.add(cb.build());
         }
         return constrains;
-    }
-
-    private static List<SimpleRecord> readInsituRecords(File file) throws Exception {
-        try (Reader reader = new LineNumberReader(new FileReader(file), 100 * 1024)) {
-            CsvRecordSource recordSource = new CsvRecordSource(reader, SimpleRecord.INSITU_DATE_FORMAT);
-            boolean hasTime = recordSource.getHeader().hasTime();
-            List<SimpleRecord> records = new ArrayList<>();
-            for (Record record : recordSource.getRecords()) {
-                if (hasTime) {
-                    records.add(new SimpleRecord(record.getTime().getTime(), record.getLocation()));
-                } else {
-                    records.add(new SimpleRecord(record.getLocation()));
-                }
-            }
-            return records;
-        }
     }
 }

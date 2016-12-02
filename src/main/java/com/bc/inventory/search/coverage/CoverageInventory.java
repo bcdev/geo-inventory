@@ -110,6 +110,11 @@ public class CoverageInventory implements Inventory {
         return startTimes.length;
     }
 
+    @Override
+    public int numEntries() {
+        return startTimes != null ? startTimes.length : 0;
+    }
+
     public boolean hasIndex() throws IOException {
         return  streamFactory.exists(INDEX_FILENAME) && streamFactory.exists(DATA_FILENAME);
     }

@@ -86,7 +86,7 @@ public class CsvRecordSource implements RecordSource {
     }
 
     @Override
-    public Iterable<Record> getRecords() throws Exception {
+    public Iterable<Record> getRecords() {
         return new Iterable<Record>() {
             @Override
             public Iterator<Record> iterator() {

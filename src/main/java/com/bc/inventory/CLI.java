@@ -1,5 +1,6 @@
 package com.bc.inventory;
 
+import com.bc.inventory.insitu.InsituRecords;
 import com.bc.inventory.search.Constrain;
 import com.bc.inventory.search.FileStreamFactory;
 import com.bc.inventory.search.QueryResult;
@@ -7,6 +8,7 @@ import com.bc.inventory.search.StreamFactory;
 import com.bc.inventory.search.coverage.CoverageInventory;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
 
@@ -27,6 +29,8 @@ import java.util.Collection;
  *   queries the DB using the given constraints.
  */
 public class CLI {
+
+    private static final long HOURS_IN_MILLIS = 1000 * 60 * 60; // Note: time in ms (NOT h)
 
     public static void main(String[] args) throws IOException {
         if (args.length < 2) {
@@ -74,18 +78,26 @@ public class CLI {
     private static void query(StreamFactory streamFactory, String[] args) throws IOException {
         CoverageInventory inventory = new CoverageInventory(streamFactory);
         inventory.loadIndex();
+        System.out.println("numEntries in geoDB= " + inventory.numEntries());
         Constrain constraints = parseConstraint(args);
+        System.out.println("Constraints = " + constraints);
+        long t1 = System.currentTimeMillis();
         QueryResult queryResult = inventory.query(constraints);
+        long t2 = System.currentTimeMillis();
         Collection<String> paths = queryResult.getPaths();
-        System.out.println("Query result:");
-        System.out.println();
-        for (String path : paths) {
-            System.out.println(path);
+        final String outputFilename = "geoDB_query_result.txt";
+        System.out.printf("Time needed: %dms%n", (t2-t1));
+        System.out.printf("Num results: %d%n", paths.size());
+        try(FileWriter fw = new FileWriter(outputFilename)) {
+            for (String path : paths) {
+                fw.append(path).append('\n');
+            }
         }
         System.out.println();
+        System.out.printf("Query result written to file: '%s'%n", outputFilename);
     }
 
-    private static Constrain parseConstraint(String[] args) {
+    private static Constrain parseConstraint(String[] args) throws IOException {
         Constrain.Builder cb = new Constrain.Builder();
         for (int i = 2; i < args.length; ) {
             String key = args[i++];
@@ -99,6 +111,11 @@ public class CLI {
                     break;
                 case "wkt":
                     cb.polygon(value);
+                    break;
+                case "insitu":
+                    cb.insitu(InsituRecords.read(new File(value)));
+                    cb.timeDelta(HOURS_IN_MILLIS * 3);
+                    cb.useOnlyProductStartDate(false);
                     break;
                 default:
                     System.out.println("unknown parameters for query: " + key);
@@ -120,6 +137,9 @@ public class CLI {
         System.out.println("    writes the content of the DB to the CSV file");
         System.out.println("query <DB-dir> <constraints>");
         System.out.println("     queries the DB using the given constraints:");
-        System.out.println("     startTime YY-MM-DD.....");
+        System.out.println("     startTime YYYY-MM-DD");
+        System.out.println("     endTime YYYY-MM-DD");
+        System.out.println("     wkt POLYGON((...))");
+        System.out.println("     insitu MATCHUP_FILE");
     }
 }

@@ -75,6 +75,11 @@ public class CsvInventory implements Inventory {
         }
     }
 
+    @Override
+    public int numEntries() {
+        return csvRecordList != null ? csvRecordList.size() : 0;
+    }
+
     private Collection<String> test(long start, long end, S2Point point, S2Polygon polygon) {
         List<String> results = new ArrayList<>();
         for (CsvRecord csvRecord : csvRecordList) {

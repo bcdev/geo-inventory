@@ -16,4 +16,6 @@ public interface Inventory {
 
     QueryResult query(Constrain constrain);
 
+    int numEntries();
+
 }
