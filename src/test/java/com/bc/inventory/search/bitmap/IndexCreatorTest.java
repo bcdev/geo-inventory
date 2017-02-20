@@ -1,13 +1,14 @@
-package com.bc.inventory.search.coverage;
+package com.bc.inventory.search.bitmap;
 
 import com.bc.geometry.s2.S2WKTReader;
 import com.google.common.geometry.S2Polygon;
 import org.junit.Test;
 
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class IndexCreatorTest {
 
@@ -27,21 +28,18 @@ public class IndexCreatorTest {
     public void testIndex() throws Exception {
         IndexCreator indexCreator = new IndexCreator(3);
         indexCreator.addToIndex("p1", 2 * 60 * 1000, 4 * 60 * 1000, aModisPolygon);
-        indexCreator.addToIndex("p2", 6 * 60 * 1000, 8 * 60 * 1000, aModisPolygon);
+        indexCreator.addToIndex("p2", 6 * 60 * 1000, 8 * 60 * 1000, bModisPolygon);
         assertEquals(2, indexCreator.size());
 
-        ByteArrayOutputStream indexOS = new ByteArrayOutputStream();
-        ByteArrayOutputStream dataOS = new ByteArrayOutputStream();
-        indexCreator.write(indexOS, dataOS);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        indexCreator.write(baos);
 
-        assertEquals(96, indexOS.size());
-        assertEquals(282, dataOS.size());
+        assertEquals(276, baos.size());
 
         IndexCreator indexCreator2 = new IndexCreator(3);
         assertEquals(0, indexCreator2.size());
-        ByteArrayInputStream indexIS = new ByteArrayInputStream(indexOS.toByteArray());
-        ByteArrayInputStream dataIS = new ByteArrayInputStream(dataOS.toByteArray());
-        indexCreator2.loadExistingIndex(indexIS, dataIS);
+        MemoryCacheImageInputStream iis = new MemoryCacheImageInputStream(new ByteArrayInputStream(baos.toByteArray()));
+        indexCreator2.loadExistingIndex(iis);
         assertEquals(2, indexCreator2.size());
 
         indexCreator2.removeFromIndex("p1");

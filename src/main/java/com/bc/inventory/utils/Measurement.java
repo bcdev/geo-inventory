@@ -1,7 +1,7 @@
 package com.bc.inventory.utils;
 
 /**
- * Created by marcoz on 04.07.16.
+ * @author marcoz
  */
 public class Measurement implements AutoCloseable {
 

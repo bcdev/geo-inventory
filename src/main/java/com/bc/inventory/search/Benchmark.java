@@ -2,6 +2,7 @@ package com.bc.inventory.search;
 
 import com.bc.inventory.insitu.InsituRecords;
 import com.bc.inventory.search.coverage.CoverageInventory;
+import com.bc.inventory.search.bitmap.BitmapInventory;
 import com.bc.inventory.utils.Measurement;
 import com.bc.inventory.utils.MeasurementTable;
 import com.bc.inventory.utils.SimpleRecord;
@@ -20,6 +21,7 @@ public class Benchmark {
 
     private static final String ACADIA_WKT = "polygon((-71.00 41.00, -52.00 41.00, -52.00 52.00, -71.00 52.00, -71.00 41.00))";
     private static final String NORTHSEA_WKT = "polygon((-19.94 40.00, -20.00 60.00, 0.0 60.00, 0.00 65.00, 13.06 65.00, 12.99 53.99, 0.00 49.22,  0.00 40.00,  -19.94 40.00))";
+    private static final String VICTORIA_WKT = "POLYGON((31.04736328125 0.856901647439813,35.35400390625 0.856901647439813,35.35400390625 -3.2173020581871374,31.04736328125 -3.2173020581871374,31.04736328125 0.856901647439813))";
 
     private static List<Constrain> constrains;
     private static File baseDir;
@@ -32,31 +34,45 @@ public class Benchmark {
         }
         constrains = createConstrains();
 
-//        measure("test");
+//        measure("test", 3);
+//        measure("test", 5);
+//        measure("test", 7);
 
-//        measure("meris2005");
+//        measure("meris2005", 3);
+//        measure("meris2005", 5);
 //        measure("modis2005");
 
-        measure("meris_l3");
-        measure("modis_l3");
+//        measure("meris", 3);
+        measure("meris", 5);
+//        measure("modis_l3");
 //        measure("GUF");
+
+//        measure("S2_L1C", 3);
+//        measure("S2_L1C", 9);
 
     }
 
-    private static void measure(String sensor) throws IOException {
-        MeasurementTable mt = new MeasurementTable(sensor);
+    private static void measure(String sensor, int maxLevel) throws IOException {
+        MeasurementTable mt = new MeasurementTable(sensor+"_level"+Integer.toString(maxLevel));
         String productListFilename = sensor + "_products_list.csv";
         File productListFile = new File(baseDir, productListFilename);
 
 //        testQueries("CSV", mt, new CsvInventory(productListFile));
 //        testQueries("CsvFast", mt, new CsvFastInventory(productListFile));
         {
-            StreamFactory streamFactory = new FileStreamFactory(new File(baseDir, sensor));
-//            testIndexCreation("Ng3_Build", mt, "../"+productListFilename, new CoverageInventory(streamFactory, false, 3));
+            StreamFactory streamFactory = new FileStreamFactory(new File(baseDir, sensor+"_level"+Integer.toString(maxLevel)));
+//            testIndexCreation("C_Build", mt, "../"+productListFilename, new CoverageInventory(streamFactory, false, maxLevel));
+//            testIndexCreation("R_Build", mt, "../"+productListFilename, new RbInventory(streamFactory, false, maxLevel));
 
-            testQueries("Ng3_Index", mt, new CoverageInventory(streamFactory, true, 3));
-            testQueries("Ng3.1", mt, new CoverageInventory(streamFactory, false, 3));
-            testQueries("Ng3.2", mt, new CoverageInventory(streamFactory, false, 3));
+//            testQueries("C_Index", mt, new CoverageInventory(streamFactory, true, maxLevel));
+            testQueries("C_1", mt, new CoverageInventory(streamFactory, false, maxLevel));
+//            testQueries("C_2", mt, new CoverageInventory(streamFactory, false, maxLevel));
+//            testQueries("C_3", mt, new CoverageInventory(streamFactory, false, maxLevel));
+
+//            testQueries("R_Index", mt, new RbInventory(streamFactory, true, maxLevel));
+            testQueries("R_1", mt, new BitmapInventory(streamFactory, false, maxLevel));
+//            testQueries("R_2", mt, new RbInventory(streamFactory, false, maxLevel));
+//            testQueries("R_3", mt, new RbInventory(streamFactory, false, maxLevel));
         }
 
         {
@@ -98,6 +114,7 @@ public class Benchmark {
         cbs.add(new Constrain.Builder("northsea, 1 year").polygon(NORTHSEA_WKT).startDate("2005-01-01").endDate("2006-01-01"));
         cbs.add(new Constrain.Builder("northsea, 1 year, #100").polygon(NORTHSEA_WKT).startDate("2005-01-01").endDate("2006-01-01").maxNumResults(100));
         cbs.add(new Constrain.Builder("northsea, 1 week").polygon(NORTHSEA_WKT).startDate("2005-06-01").endDate("2005-06-07"));
+        cbs.add(new Constrain.Builder("victoria, 1 week").polygon(VICTORIA_WKT).startDate("2016-06-01").endDate("2016-06-07"));
         cbs.add(new Constrain.Builder("northsea, 1 day").polygon(NORTHSEA_WKT).startDate("2005-06-01").endDate("2005-06-01"));
         cbs.add(new Constrain.Builder("matchups 30k lat/lon/time").insitu(latLonTime).timeDelta(HOURS_IN_MILLIS * 3));
         cbs.add(new Constrain.Builder("extracts 3 lat/lon").insitu(latLon));

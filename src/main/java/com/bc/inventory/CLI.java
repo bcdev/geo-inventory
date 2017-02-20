@@ -5,7 +5,7 @@ import com.bc.inventory.search.Constrain;
 import com.bc.inventory.search.FileStreamFactory;
 import com.bc.inventory.search.QueryResult;
 import com.bc.inventory.search.StreamFactory;
-import com.bc.inventory.search.coverage.CoverageInventory;
+import com.bc.inventory.search.bitmap.BitmapInventory;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -60,23 +60,23 @@ public class CLI {
     }
 
     private static void create(StreamFactory streamFactory, String csvFile) throws IOException {
-        CoverageInventory inventory = new CoverageInventory(streamFactory);
+        BitmapInventory inventory = new BitmapInventory(streamFactory);
         inventory.createIndex(csvFile);
     }
 
     private static void dump(StreamFactory streamFactory, String csvFile) throws IOException {
-        CoverageInventory inventory = new CoverageInventory(streamFactory);
+        BitmapInventory inventory = new BitmapInventory(streamFactory);
         inventory.loadIndex();
         inventory.dumpDB(csvFile);
     }
 
     private static void update(StreamFactory streamFactory, String csvFile) throws IOException {
-        CoverageInventory inventory = new CoverageInventory(streamFactory);
+        BitmapInventory inventory = new BitmapInventory(streamFactory);
         inventory.updateIndex(csvFile);
     }
 
     private static void query(StreamFactory streamFactory, String[] args) throws IOException {
-        CoverageInventory inventory = new CoverageInventory(streamFactory);
+        BitmapInventory inventory = new BitmapInventory(streamFactory);
         inventory.loadIndex();
         System.out.println("numEntries in geoDB= " + inventory.numEntries());
         Constrain constraints = parseConstraint(args);

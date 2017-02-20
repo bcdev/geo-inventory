@@ -21,6 +21,8 @@ import com.google.common.geometry.S2CellUnion;
 import com.google.common.geometry.S2LatLng;
 import com.google.common.geometry.S2Polygon;
 import com.google.common.geometry.S2RegionCoverer;
+import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
+import org.roaringbitmap.buffer.MutableRoaringBitmap;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +37,13 @@ public class S2Integer {
             s2CellId = s2CellId.parent(13);
         }
         return (int) (s2CellId.id() >>> 34);
+    }
+
+    public static int asIntAtLevel(S2CellId s2CellId, int level) {
+        if (s2CellId.level() > level) {
+            s2CellId = s2CellId.parent(level);
+        }
+        return (int) (s2CellId.id() >>> (64 - 3 - (2*level)));
     }
 
     public static strictfp boolean containsCellId(final int[] intCellIds, final S2CellId s2CellId) {
@@ -173,6 +182,20 @@ public class S2Integer {
         coverer.setMaxLevel(maxLevel);
         coverer.setMaxCells(500);
         return coverer.getCovering(s2polygon);
+    }
+    public static ImmutableRoaringBitmap createCoverageBitmap(S2Polygon s2polygon, int maxLevel) {
+        return createCoverageBitmap(createCellUnion(s2polygon, maxLevel), maxLevel);
+    }
+
+    public static ImmutableRoaringBitmap createCoverageBitmap(S2CellUnion covering, int maxLevel) {
+        ArrayList<S2CellId> deNormalized = new ArrayList<>();
+        covering.denormalize(maxLevel, 1, deNormalized);
+        MutableRoaringBitmap roaringBitmap = new MutableRoaringBitmap();
+        for (S2CellId s2CellId : deNormalized) {
+            roaringBitmap.add(asIntAtLevel(s2CellId, maxLevel));
+        }
+        roaringBitmap.runOptimize();
+        return  roaringBitmap;
     }
 
     public static class Coverage {

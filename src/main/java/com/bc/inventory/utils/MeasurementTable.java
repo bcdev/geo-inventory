@@ -2,11 +2,9 @@ package com.bc.inventory.utils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 /**
- * Created by marcoz on 04.07.16.
+ * @author marcoz
  */
 public class MeasurementTable {
 

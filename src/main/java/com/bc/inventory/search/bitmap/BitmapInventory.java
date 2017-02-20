@@ -1,4 +1,4 @@
-package com.bc.inventory.search.coverage;
+package com.bc.inventory.search.bitmap;
 
 import com.bc.geometry.s2.S2WKTWriter;
 import com.bc.inventory.search.Constrain;
@@ -14,7 +14,9 @@ import com.bc.inventory.utils.SimpleRecord;
 import com.google.common.geometry.S2CellId;
 import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
+import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
+import javax.imageio.stream.ImageInputStream;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -22,25 +24,17 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.text.DateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
- * An inventory based on a list of coverages.
+ * An inventory based on a list of bitmaps.
  */
-@Deprecated
-public class CoverageInventory implements Inventory {
+public class BitmapInventory implements Inventory {
 
     private static final long MINUTES_PER_MILLI = 60 * 1000;
     private static final DateFormat DATE_FORMAT = DateUtils.createDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     private static final int DEFFAULT_MAX_LEVEL = 3;
-    private static final String INDEX_FILENAME = "index";
-    private static final String DATA_FILENAME = "data";
+    private static final String INDEX_FILENAME = "geo_index";
 
     private final StreamFactory streamFactory;
     private final boolean indexOnly;
@@ -48,15 +42,15 @@ public class CoverageInventory implements Inventory {
 
     private int[] startTimes;
     private int[] endTimes;
-    private int[] coverageIndices;
-    private int[] dataOffsets;
-    private int[][] coverages;
+    private int[] bitmapIndices;
+    private ImmutableRoaringBitmap[] bitmaps;
+    private DbFile.Reader reader;
 
-    public CoverageInventory(StreamFactory streamFactory) {
+    public BitmapInventory(StreamFactory streamFactory) {
         this(streamFactory, false, DEFFAULT_MAX_LEVEL);
     }
 
-    public CoverageInventory(StreamFactory streamFactory, boolean indexOnly, int maxLevel) {
+    public BitmapInventory(StreamFactory streamFactory, boolean indexOnly, int maxLevel) {
         this.streamFactory = streamFactory;
         this.indexOnly = indexOnly;
         this.maxLevel = maxLevel;
@@ -73,9 +67,8 @@ public class CoverageInventory implements Inventory {
     @Override
     public int updateIndex(String productListFilename) throws IOException {
         IndexCreator indexCreator = new IndexCreator(maxLevel);
-        try (InputStream indexIS = streamFactory.createInputStream(INDEX_FILENAME);
-             InputStream dataIS = streamFactory.createInputStream(DATA_FILENAME)) {
-            indexCreator.loadExistingIndex(indexIS, dataIS);
+        try (ImageInputStream iis = streamFactory.createImageInputStream(INDEX_FILENAME)) {
+            indexCreator.loadExistingIndex(iis);
         }
         addRecordsToIndex(productListFilename, indexCreator);
         writeIndex(indexCreator);
@@ -83,32 +76,34 @@ public class CoverageInventory implements Inventory {
     }
 
     private void writeIndex(IndexCreator indexCreator) throws IOException {
-        try (OutputStream indexOS = streamFactory.createOutputStream(INDEX_FILENAME);
-             OutputStream dataOS = streamFactory.createOutputStream(DATA_FILENAME)) {
-            indexCreator.write(indexOS, dataOS);
+        try (OutputStream os = streamFactory.createOutputStream(INDEX_FILENAME)) {
+            indexCreator.write(os);
         }
     }
 
     private void addRecordsToIndex(String productListFilename, IndexCreator indexCreator) throws IOException {
         try (InputStream inputStream = streamFactory.createInputStream(productListFilename)) {
             CsvRecordReader.CsvRecordIterator iterator = CsvRecordReader.getIterator(inputStream);
+            int counter = 0;
             while (iterator.hasNext()) {
                 CsvRecord r = iterator.next();
                 indexCreator.addToIndex(r.getPath(), r.getStartTime(), r.getEndTime(), r.getS2Polygon());
+                counter++;
+                if (counter % 1000 == 0) {
+                    System.out.println("added " + counter);
+                }
             }
         }
     }
 
     @Override
     public int loadIndex() throws IOException {
-        try (IndexFile.Reader indexFile = new IndexFile.Reader(streamFactory.createInputStream(INDEX_FILENAME))) {
-            indexFile.readRecords();
-            startTimes = indexFile.getStartTimes();
-            endTimes = indexFile.getEndTimes();
-            coverageIndices = indexFile.getCoverageIndices();
-            dataOffsets = indexFile.getDataOffsets();
-            coverages = indexFile.readCoverages();
-        }
+        reader = new DbFile.Reader(streamFactory.createImageInputStream(INDEX_FILENAME));
+        reader.readIndex();
+        startTimes = reader.getStartTimes();
+        endTimes = reader.getEndTimes();
+        bitmapIndices = reader.getBitmapIndices();
+        bitmaps = reader.getBitmaps();
         return startTimes.length;
     }
 
@@ -118,18 +113,16 @@ public class CoverageInventory implements Inventory {
     }
 
     public boolean hasIndex() throws IOException {
-        return  streamFactory.exists(INDEX_FILENAME) && streamFactory.exists(DATA_FILENAME);
+        return streamFactory.exists(INDEX_FILENAME);
     }
 
     public void dumpDB(String csvFile) throws IOException {
-        try (
-                DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME));
-                Writer csvWriter = new BufferedWriter(new FileWriter(csvFile))
-        ) {
-            for (int i = 0; i < dataOffsets.length; i++) {
-                reader.seekTo(dataOffsets[i]);
-                String wkt = S2WKTWriter.write(reader.readPolygon());
-                String path = reader.readPath();
+        try (Writer csvWriter = new BufferedWriter(new FileWriter(csvFile))) {
+            for (int i = 0; i < startTimes.length; i++) {
+                reader.readEntry(i);
+                String path = reader.getCurrentPath();
+                S2Polygon polygon = reader.getCurrentPolygon();
+                String wkt = S2WKTWriter.write(polygon);
                 String startTime = DATE_FORMAT.format(new Date(startTimes[i] * MINUTES_PER_MILLI));
                 String endTime = DATE_FORMAT.format(new Date(endTimes[i] * MINUTES_PER_MILLI));
                 csvWriter.write(String.format("%s\t%s\t%s\t%s%n", path, startTime, endTime, wkt));
@@ -203,7 +196,7 @@ public class CoverageInventory implements Inventory {
     @SuppressWarnings("StatementWithEmptyBody")
     private List<Integer> testOnIndex(int startTime, int endTime, boolean useOnlyProductStart, S2Point point, S2Polygon polygon) {
         S2CellId s2CellId = null;
-        int[] polygonIntIds = null;
+        ImmutableRoaringBitmap polygonBitmap = null;
         List<Integer> results = new ArrayList<>();
         int productIndex;
         if (startTime == -1) {
@@ -242,15 +235,16 @@ public class CoverageInventory implements Inventory {
                 if (s2CellId == null) {
                     s2CellId = S2CellId.fromPoint(point);
                 }
-                int[] coverage = coverages[coverageIndices[productIndex]];
-                if (S2Integer.containsCellId(coverage, s2CellId)) {
+                ImmutableRoaringBitmap roaringBitmap = bitmaps[bitmapIndices[productIndex]];
+                if (roaringBitmap.contains(S2Integer.asIntAtLevel(s2CellId, maxLevel))) {
                     results.add(productIndex);
                 }
             } else if (polygon != null) {
-                if (polygonIntIds == null) {
-                    polygonIntIds = S2Integer.createS2IntIds(polygon, maxLevel);
+                if (polygonBitmap == null) {
+                    polygonBitmap = S2Integer.createCoverageBitmap(polygon, maxLevel);
                 }
-                if (S2Integer.intersectsCellUnionFast(polygonIntIds, coverages[coverageIndices[productIndex]])) {
+                ImmutableRoaringBitmap roaringBitmap = bitmaps[bitmapIndices[productIndex]];
+                if (ImmutableRoaringBitmap.intersects(roaringBitmap, polygonBitmap)) {
                     results.add(productIndex);
                 }
             } else {
@@ -262,13 +256,13 @@ public class CoverageInventory implements Inventory {
     }
 
     private Collection<String> testPolygonOnData(List<Integer> uniqueProductList, S2Polygon searchPolygon, int numResults) {
-        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(dataOffsets[o1], dataOffsets[o2]));
+        uniqueProductList.sort(Comparator.comparingInt(o -> startTimes[o]));
         List<String> matches = new ArrayList<>();
-        try (DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME))) {
+        try {
             for (Integer productID : uniqueProductList) {
-                reader.seekTo(dataOffsets[productID]);
-                if (searchPolygon == null || reader.readPolygon().intersects(searchPolygon)) {
-                    matches.add(reader.readPath());
+                reader.readEntry(productID);
+                if (searchPolygon == null || reader.getCurrentPolygon().intersects(searchPolygon)) {
+                    matches.add(reader.getCurrentPath());
                     if (matches.size() == numResults) {
                         return matches;
                     }
@@ -283,24 +277,24 @@ public class CoverageInventory implements Inventory {
     private List<String> testPointsOnData(Map<Integer, List<S2Point>> candidatesMap, int maxNumResults) {
 
         List<Integer> uniqueProductList = new ArrayList<>(candidatesMap.keySet());
-        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(dataOffsets[o1], dataOffsets[o2]));
+        uniqueProductList.sort(Comparator.comparingInt(o -> startTimes[o]));
 
         List<String> matches = new ArrayList<>();
-        try (DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME))) {
+        try {
             for (Integer productID : uniqueProductList) {
-                reader.seekTo(dataOffsets[productID]);
+                reader.readEntry(productID);
 
-                S2Polygon productPolygon = reader.readPolygon();
+                S2Polygon polygon = reader.getCurrentPolygon();
                 List<S2Point> s2Points = candidatesMap.get(productID);
                 boolean pointInPolygon = false;
                 for (S2Point s2Point : s2Points) {
-                    if (productPolygon.contains(s2Point)) {
+                    if (polygon.contains(s2Point)) {
                         pointInPolygon = true;
                         break;
                     }
                 }
                 if (pointInPolygon) {
-                    matches.add(reader.readPath());
+                    matches.add(reader.getCurrentPath());
                     if (matches.size() == maxNumResults) {
                         return matches;
                     }
@@ -317,19 +311,4 @@ public class CoverageInventory implements Inventory {
         return Search.indexedBinarySearch(startTimes, currentStartTime);
     }
 
-    // for debugging
-    private void printProducts(List<Integer> productIDs) {
-        Collections.sort(productIDs, (o1, o2) -> Integer.compare(dataOffsets[o1], dataOffsets[o2]));
-        try (DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME))) {
-            for (Integer productID : productIDs) {
-                reader.seekTo(dataOffsets[productID]);
-                String path = reader.readPath();
-                String start = DATE_FORMAT.format(new Date(startTimes[productID] * MINUTES_PER_MILLI));
-                String end = DATE_FORMAT.format(new Date(endTimes[productID] * MINUTES_PER_MILLI));
-                System.out.printf("%s  %s  %s%n", start, end, path);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 }

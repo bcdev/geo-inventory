@@ -1,5 +1,7 @@
 package com.bc.inventory.search;
 
+import javax.imageio.stream.FileImageInputStream;
+import javax.imageio.stream.ImageInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -16,11 +18,17 @@ public class FileStreamFactory implements StreamFactory {
 
     public FileStreamFactory(File baseDir) {
         this.baseDir = baseDir;
+        this.baseDir.mkdirs();
     }
 
     @Override
     public InputStream createInputStream(String name) throws IOException {
         return new FileInputStream(new File(baseDir, name));
+    }
+
+    @Override
+    public ImageInputStream createImageInputStream(String name) throws IOException {
+        return new FileImageInputStream(new File(baseDir, name));
     }
 
     @Override
