@@ -29,7 +29,6 @@ import java.util.List;
 /**
  * An inventory based on a list of coverages.
  */
-@Deprecated
 public class CoverageInventory implements Inventory {
 
     private static final long MINUTES_PER_MILLI = 60 * 1000;
@@ -111,14 +110,10 @@ public class CoverageInventory implements Inventory {
 
         return startTimes.length;
     }
-
+    
     @Override
-    public int numEntries() {
-        return startTimes != null ? startTimes.length : 0;
-    }
-
-    public boolean hasIndex() throws IOException {
-        return streamFactory.exists(INDEX_FILENAME) && streamFactory.exists(DATA_FILENAME);
+    public QueryResult query(Constrain constrain) {
+        return querySolver.query(constrain);
     }
 
     public void dumpDB(String csvFile) throws IOException {
@@ -203,11 +198,6 @@ public class CoverageInventory implements Inventory {
         public String getCurrentPath() throws IOException {
             return reader.readPath();
         }
-    }
-
-    @Override
-    public QueryResult query(Constrain constrain) {
-        return querySolver.query(constrain);
     }
     
     // for debugging

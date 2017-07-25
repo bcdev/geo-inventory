@@ -77,8 +77,8 @@ public class CLI {
 
     private static void query(StreamFactory streamFactory, String[] args) throws IOException {
         BitmapInventory inventory = new BitmapInventory(streamFactory);
-        inventory.loadIndex();
-        System.out.println("numEntries in geoDB= " + inventory.numEntries());
+        int numEntries = inventory.loadIndex();
+        System.out.println("numEntries in geoDB= " + numEntries);
         Constrain constraints = parseConstraint(args);
         System.out.println("Constraints = " + constraints);
         long t1 = System.currentTimeMillis();

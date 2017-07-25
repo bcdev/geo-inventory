@@ -83,14 +83,9 @@ public class BitmapInventory implements Inventory {
     private void addRecordsToIndex(String productListFilename, IndexCreator indexCreator) throws IOException {
         try (InputStream inputStream = streamFactory.createInputStream(productListFilename)) {
             CsvRecordReader.CsvRecordIterator iterator = CsvRecordReader.getIterator(inputStream);
-            int counter = 0;
             while (iterator.hasNext()) {
                 CsvRecord r = iterator.next();
                 indexCreator.addToIndex(r.getPath(), r.getStartTime(), r.getEndTime(), r.getS2Polygon());
-                counter++;
-                if (counter % 1000 == 0) {
-                    System.out.println("added " + counter);
-                }
             }
         }
     }
@@ -112,15 +107,6 @@ public class BitmapInventory implements Inventory {
     @Override
     public QueryResult query(Constrain constrain) {
         return querySolver.query(constrain);
-    }
-
-    @Override
-    public int numEntries() {
-        return startTimes != null ? startTimes.length : 0;
-    }
-
-    public boolean hasIndex() throws IOException {
-        return streamFactory.exists(INDEX_FILENAME);
     }
 
     public void dumpDB(String csvFile) throws IOException {
