@@ -2,15 +2,15 @@ package com.bc.inventory.search.coverage;
 
 import com.bc.geometry.s2.S2WKTWriter;
 import com.bc.inventory.search.Constrain;
+import com.bc.inventory.search.Index;
 import com.bc.inventory.search.Inventory;
 import com.bc.inventory.search.QueryResult;
+import com.bc.inventory.search.QuerySolver;
 import com.bc.inventory.search.StreamFactory;
 import com.bc.inventory.search.csv.CsvRecord;
 import com.bc.inventory.search.csv.CsvRecordReader;
-import com.bc.inventory.utils.DateUtils;
 import com.bc.inventory.utils.S2Integer;
-import com.bc.inventory.utils.Search;
-import com.bc.inventory.utils.SimpleRecord;
+import com.bc.inventory.utils.TimeUtils;
 import com.google.common.geometry.S2CellId;
 import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
@@ -22,13 +22,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.text.DateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * An inventory based on a list of coverages.
@@ -37,7 +33,7 @@ import java.util.Map;
 public class CoverageInventory implements Inventory {
 
     private static final long MINUTES_PER_MILLI = 60 * 1000;
-    private static final DateFormat DATE_FORMAT = DateUtils.createDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+    private static final DateFormat DATE_FORMAT = TimeUtils.createDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     private static final int DEFFAULT_MAX_LEVEL = 3;
     private static final String INDEX_FILENAME = "index";
     private static final String DATA_FILENAME = "data";
@@ -51,6 +47,7 @@ public class CoverageInventory implements Inventory {
     private int[] coverageIndices;
     private int[] dataOffsets;
     private int[][] coverages;
+    private QuerySolver querySolver;
 
     public CoverageInventory(StreamFactory streamFactory) {
         this(streamFactory, false, DEFFAULT_MAX_LEVEL);
@@ -109,6 +106,9 @@ public class CoverageInventory implements Inventory {
             dataOffsets = indexFile.getDataOffsets();
             coverages = indexFile.readCoverages();
         }
+        Index index = new CoverageIndex(startTimes, endTimes, coverageIndices, coverages, maxLevel, dataOffsets);
+        querySolver = new QuerySolver(index, indexOnly);
+
         return startTimes.length;
     }
 
@@ -118,7 +118,7 @@ public class CoverageInventory implements Inventory {
     }
 
     public boolean hasIndex() throws IOException {
-        return  streamFactory.exists(INDEX_FILENAME) && streamFactory.exists(DATA_FILENAME);
+        return streamFactory.exists(INDEX_FILENAME) && streamFactory.exists(DATA_FILENAME);
     }
 
     public void dumpDB(String csvFile) throws IOException {
@@ -139,184 +139,77 @@ public class CoverageInventory implements Inventory {
         }
     }
 
+    class CoverageIndex extends Index {
+
+        private final int[] coverageIndices;
+        private final int[][] coverages;
+        private final int maxLevel;
+        private final int[] dataOffsets;
+        private DataFile.Reader reader;
+
+        private S2Point lastPoint;
+        private int lastPointAsInt;
+
+        private S2Polygon lastPolygon;
+        private int[] lastPolygonAsCoverage;
+
+        CoverageIndex(int[] startTimes, int[] endTimes, int[] coverageIndices, int[][] coverages, int maxLevel, int[] dataOffsets) {
+            super(startTimes, endTimes);
+            this.coverageIndices = coverageIndices;
+            this.coverages = coverages;
+            this.maxLevel = maxLevel;
+            this.dataOffsets = dataOffsets;
+        }
+
+        @Override
+        public boolean containsPoint(int productIndex, S2Point point) {
+            if (point != lastPoint) {
+                S2CellId lastPointAsS2CellId = S2CellId.fromPoint(point);
+                lastPointAsInt = S2Integer.asInt(lastPointAsS2CellId);
+                lastPoint = point;
+            }
+            int[] coverage = coverages[coverageIndices[productIndex]];
+            return S2Integer.containsCellId(coverage, lastPointAsInt);
+        }
+
+        @Override
+        public boolean intersectsPolygon(int productIndex, S2Polygon polygon) {
+            if (polygon != lastPolygon) {
+                lastPolygonAsCoverage = S2Integer.createS2IntIds(polygon, maxLevel);
+                lastPolygon = polygon;
+            }
+            int[] coverage = coverages[coverageIndices[productIndex]];
+            return S2Integer.intersectsCellUnionFast(lastPolygonAsCoverage, coverage);
+        }
+
+        @Override
+        public void readEntry(int productIndex) throws IOException {
+            int dataOffset = dataOffsets[productIndex];
+            if (reader == null) {
+                reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME));
+            } else if (reader.currentPos() > dataOffset) {
+                reader.close();
+                reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME));
+            }
+            reader.seekTo(dataOffset);
+        }
+
+        @Override
+        public S2Polygon getCurrentPolygon() throws IOException {
+            return reader.readPolygon();
+        }
+
+        @Override
+        public String getCurrentPath() throws IOException {
+            return reader.readPath();
+        }
+    }
+
     @Override
     public QueryResult query(Constrain constrain) {
-        SimpleRecord[] insituRecords = constrain.getInsituRecords();
-        int start = IndexCreator.startTimeInMin(constrain.getStartTime());   // can be -1
-        int end = IndexCreator.endTimeInMin(constrain.getEndTime());         // can be -1
-        int maxNumResults = constrain.getMaxNumResults();
-
-        if (insituRecords.length == 0) {
-            S2Polygon polygon = constrain.getPolygon();
-            boolean useOnlyProductStart = constrain.useOnlyProductStart();
-            List<Integer> productIDs = testOnIndex(start, end, useOnlyProductStart, null, polygon);
-            if (indexOnly) {
-                return new QueryResult(testPolygonOnData(productIDs, null, maxNumResults));
-            } else {
-                return new QueryResult(testPolygonOnData(productIDs, polygon, maxNumResults));
-            }
-        } else {
-            Map<Integer, List<S2Point>> candidatesMap = new HashMap<>();
-            for (SimpleRecord insituRecord : insituRecords) {
-                long delta = constrain.getTimeDelta();
-                boolean useOnlyProductStart = constrain.useOnlyProductStart();
-                long insituRecordTime = insituRecord.getTime();
-                int insituStart = start;
-                int insituEnd = end;
-                if (delta != -1 && insituRecordTime != -1) {
-                    insituStart = IndexCreator.startTimeInMin(insituRecordTime - delta);
-                    insituEnd = IndexCreator.endTimeInMin(insituRecordTime + delta);
-                    if (end != -1 && end < insituStart) {
-                        continue;
-                    }
-                    if (start != -1 && start > insituEnd) {
-                        continue;
-                    }
-                    useOnlyProductStart = false; // for time-matchups always precise time checks
-                }
-                S2Point s2Point = insituRecord.getAsPoint();
-                List<Integer> productIDs = testOnIndex(insituStart, insituEnd, useOnlyProductStart, s2Point, null);
-                if (!productIDs.isEmpty()) {
-                    for (Integer match : productIDs) {
-                        List<S2Point> candidateProducts = candidatesMap.get(match);
-                        if (candidateProducts == null) {
-                            candidateProducts = new ArrayList<>();
-                            candidatesMap.put(match, candidateProducts);
-                        }
-                        candidateProducts.add(s2Point);
-                    }
-                }
-            }
-            List<String> paths;
-            if (indexOnly) {
-                paths = new ArrayList<>(candidatesMap.size());
-                for (Integer productID : candidatesMap.keySet()) {
-                    paths.add("index_only:" + productID);
-                }
-            } else {
-                paths = testPointsOnData(candidatesMap, maxNumResults);
-            }
-            return new QueryResult(paths);
-        }
+        return querySolver.query(constrain);
     }
-
-    @SuppressWarnings("StatementWithEmptyBody")
-    private List<Integer> testOnIndex(int startTime, int endTime, boolean useOnlyProductStart, S2Point point, S2Polygon polygon) {
-        S2CellId s2CellId = null;
-        int[] polygonIntIds = null;
-        List<Integer> results = new ArrayList<>();
-        int productIndex;
-        if (startTime == -1) {
-            productIndex = 0;
-        } else {
-            productIndex = getIndexForTime(startTime);
-            if (productIndex == -1) {
-                return results;
-            }
-        }
-
-        while (true) {
-            if (productIndex >= startTimes.length) {
-                break;
-            }
-            if (useOnlyProductStart) {
-                if (endTime != -1 && startTimes[productIndex] >= endTime) {
-                    break;
-                } else if (startTime != -1 && startTimes[productIndex] < startTime) {
-                    // this product starts too early, skip
-                    productIndex++;
-                    continue;
-                }
-            } else {
-                if (endTime != -1 && startTimes[productIndex] > endTime) {
-                    break;
-                } else if (startTime != -1 && endTimes[productIndex] < startTime) {
-                    // this product ends too early, but the next could be longer
-                    productIndex++;
-                    continue;
-                }
-            }
-
-            // time matches, now test geo
-            if (point != null) {
-                if (s2CellId == null) {
-                    s2CellId = S2CellId.fromPoint(point);
-                }
-                int[] coverage = coverages[coverageIndices[productIndex]];
-                if (S2Integer.containsCellId(coverage, s2CellId)) {
-                    results.add(productIndex);
-                }
-            } else if (polygon != null) {
-                if (polygonIntIds == null) {
-                    polygonIntIds = S2Integer.createS2IntIds(polygon, maxLevel);
-                }
-                if (S2Integer.intersectsCellUnionFast(polygonIntIds, coverages[coverageIndices[productIndex]])) {
-                    results.add(productIndex);
-                }
-            } else {
-                results.add(productIndex);
-            }
-            productIndex++;
-        }
-        return results;
-    }
-
-    private Collection<String> testPolygonOnData(List<Integer> uniqueProductList, S2Polygon searchPolygon, int numResults) {
-        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(dataOffsets[o1], dataOffsets[o2]));
-        List<String> matches = new ArrayList<>();
-        try (DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME))) {
-            for (Integer productID : uniqueProductList) {
-                reader.seekTo(dataOffsets[productID]);
-                if (searchPolygon == null || reader.readPolygon().intersects(searchPolygon)) {
-                    matches.add(reader.readPath());
-                    if (matches.size() == numResults) {
-                        return matches;
-                    }
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return matches;
-    }
-
-    private List<String> testPointsOnData(Map<Integer, List<S2Point>> candidatesMap, int maxNumResults) {
-
-        List<Integer> uniqueProductList = new ArrayList<>(candidatesMap.keySet());
-        Collections.sort(uniqueProductList, (o1, o2) -> Integer.compare(dataOffsets[o1], dataOffsets[o2]));
-
-        List<String> matches = new ArrayList<>();
-        try (DataFile.Reader reader = new DataFile.Reader(streamFactory.createInputStream(DATA_FILENAME))) {
-            for (Integer productID : uniqueProductList) {
-                reader.seekTo(dataOffsets[productID]);
-
-                S2Polygon productPolygon = reader.readPolygon();
-                List<S2Point> s2Points = candidatesMap.get(productID);
-                boolean pointInPolygon = false;
-                for (S2Point s2Point : s2Points) {
-                    if (productPolygon.contains(s2Point)) {
-                        pointInPolygon = true;
-                        break;
-                    }
-                }
-                if (pointInPolygon) {
-                    matches.add(reader.readPath());
-                    if (matches.size() == maxNumResults) {
-                        return matches;
-                    }
-                }
-            }
-            return matches;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return matches;
-    }
-
-    private int getIndexForTime(int currentStartTime) {
-        return Search.indexedBinarySearch(startTimes, currentStartTime);
-    }
-
+    
     // for debugging
     private void printProducts(List<Integer> productIDs) {
         Collections.sort(productIDs, (o1, o2) -> Integer.compare(dataOffsets[o1], dataOffsets[o2]));

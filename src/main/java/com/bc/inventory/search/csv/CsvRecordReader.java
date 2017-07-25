@@ -1,7 +1,7 @@
 package com.bc.inventory.search.csv;
 
 import com.bc.geometry.s2.S2WKTReader;
-import com.bc.inventory.utils.DateUtils;
+import com.bc.inventory.utils.TimeUtils;
 import com.google.common.geometry.S2Polygon;
 
 import java.io.BufferedReader;
@@ -19,7 +19,7 @@ import java.util.List;
  */
 public class CsvRecordReader {
 
-    private static final DateFormat DATE_FORMAT = DateUtils.createDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+    private static final DateFormat DATE_FORMAT = TimeUtils.createDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     private static final S2WKTReader WKT_READER = new S2WKTReader();
 
     public static List<CsvRecord> readAllRecords(InputStream inputStream) {
@@ -114,7 +114,7 @@ public class CsvRecordReader {
         if (split.isEmpty() || split.equalsIgnoreCase("null")) {
             return -1;
         }
-        return DATE_FORMAT.parse(DateUtils.getNoFractionString(split)).getTime();
+        return DATE_FORMAT.parse(TimeUtils.getNoFractionString(split)).getTime();
     }
 
     private static S2Polygon parsePolygon(String wkt) {

@@ -25,9 +25,10 @@ import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
-public class DateUtils {
+public class TimeUtils {
 
-    public static final TimeZone UTC_TIME_ZONE = TimeZone.getTimeZone("UTC");
+    private static final double MINUTES_PER_MILLI = 60.0 * 1000;
+    private static final TimeZone UTC_TIME_ZONE = TimeZone.getTimeZone("UTC");
 
     public static Date parse(String text, String pattern) throws ParseException {
         final DateFormat dateFormat = createDateFormat(pattern);
@@ -56,5 +57,19 @@ public class DateUtils {
         calendar.clear();
         calendar.set(2000, 0, 1);
         return calendar;
+    }
+    
+    public static int startTimeInMin(long startTime) {
+        if (startTime == -1) {
+            return -1;
+        }
+        return (int) Math.floor(startTime / MINUTES_PER_MILLI);
+    }
+
+    public static int endTimeInMin(long endTime) {
+        if (endTime == -1) {
+            return -1;
+        }
+        return (int) Math.ceil(endTime / MINUTES_PER_MILLI);
     }
 }

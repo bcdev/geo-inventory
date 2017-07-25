@@ -1,6 +1,7 @@
 package com.bc.inventory.search.bitmap;
 
 import com.bc.inventory.utils.S2Integer;
+import com.bc.inventory.utils.TimeUtils;
 import com.google.common.geometry.S2Polygon;
 import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
@@ -13,8 +14,6 @@ import java.util.*;
  * Creates or updates a coverage index
  */
 class IndexCreator {
-
-    private static final double MINUTES_PER_MILLI = 60.0 * 1000;
 
     private final int maxLevel;
     private final List<ImmutableRoaringBitmap> bitmapList;
@@ -58,7 +57,7 @@ class IndexCreator {
         byte[] polygonBytes = S2Utils.asBytes(s2Polygon);
 
         if (!allPaths.contains(path)) {
-            Entry record = new Entry(startTimeInMin(startTime), endTimeInMin(endTime), coverageId, path,
+            Entry record = new Entry(TimeUtils.startTimeInMin(startTime), TimeUtils.endTimeInMin(endTime), coverageId, path,
                                      polygonBytes);
             indexRecords.add(record);
             allPaths.add(path);
@@ -95,19 +94,4 @@ class IndexCreator {
     public int size() {
         return indexRecords.size();
     }
-
-    static int startTimeInMin(long startTime) {
-        if (startTime == -1) {
-            return -1;
-        }
-        return (int) Math.floor(startTime / MINUTES_PER_MILLI);
-    }
-
-    static int endTimeInMin(long endTime) {
-        if (endTime == -1) {
-            return -1;
-        }
-        return (int) Math.ceil(endTime / MINUTES_PER_MILLI);
-    }
-
 }

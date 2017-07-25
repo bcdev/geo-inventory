@@ -25,7 +25,7 @@ import java.util.Date;
 
 public class SimpleRecord {
 
-    public static final DateFormat INSITU_DATE_FORMAT = DateUtils.createDateFormat("yyyy-MM-dd HH:mm:ss");
+    public static final DateFormat INSITU_DATE_FORMAT = TimeUtils.createDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private final long time;
     private final Point2D location;

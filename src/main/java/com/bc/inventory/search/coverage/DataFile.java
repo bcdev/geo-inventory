@@ -67,6 +67,10 @@ class DataFile {
             hasReadPolygon = false;
         }
 
+        int currentPos() {
+            return pos;
+        }
+
         byte[] readPolygonBytes() throws IOException {
             dis.mark(4);
             final int numLoopPoints = dis.readInt();

@@ -66,12 +66,12 @@ public class Benchmark {
 
 //            testQueries("C_Index", mt, new CoverageInventory(streamFactory, true, maxLevel));
             testQueries("C_1", mt, new CoverageInventory(streamFactory, false, maxLevel));
-//            testQueries("C_2", mt, new CoverageInventory(streamFactory, false, maxLevel));
+            testQueries("C_2", mt, new CoverageInventory(streamFactory, false, maxLevel));
 //            testQueries("C_3", mt, new CoverageInventory(streamFactory, false, maxLevel));
 
 //            testQueries("R_Index", mt, new RbInventory(streamFactory, true, maxLevel));
             testQueries("R_1", mt, new BitmapInventory(streamFactory, false, maxLevel));
-//            testQueries("R_2", mt, new RbInventory(streamFactory, false, maxLevel));
+            testQueries("R_2", mt, new BitmapInventory(streamFactory, false, maxLevel));
 //            testQueries("R_3", mt, new RbInventory(streamFactory, false, maxLevel));
         }
 

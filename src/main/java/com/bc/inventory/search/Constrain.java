@@ -2,13 +2,12 @@ package com.bc.inventory.search;
 
 import com.bc.geometry.s2.S2WKTReader;
 import com.bc.geometry.s2.S2WKTWriter;
-import com.bc.inventory.utils.DateUtils;
+import com.bc.inventory.utils.TimeUtils;
 import com.bc.inventory.utils.SimpleRecord;
 import com.google.common.geometry.S2Polygon;
 
 import java.text.DateFormat;
 import java.text.ParseException;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -18,7 +17,7 @@ import java.util.List;
  */
 public class Constrain {
 
-    private static final DateFormat DATE_FORMAT = DateUtils.createDateFormat("yyyy-MM-dd");
+    private static final DateFormat DATE_FORMAT = TimeUtils.createDateFormat("yyyy-MM-dd");
     private static final long DAY_IN_MILLIS = 24 * 60 * 60 * 1000L;
 
     private final String queryName;

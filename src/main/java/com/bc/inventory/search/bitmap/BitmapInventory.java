@@ -2,15 +2,15 @@ package com.bc.inventory.search.bitmap;
 
 import com.bc.geometry.s2.S2WKTWriter;
 import com.bc.inventory.search.Constrain;
+import com.bc.inventory.search.Index;
 import com.bc.inventory.search.Inventory;
 import com.bc.inventory.search.QueryResult;
+import com.bc.inventory.search.QuerySolver;
 import com.bc.inventory.search.StreamFactory;
 import com.bc.inventory.search.csv.CsvRecord;
 import com.bc.inventory.search.csv.CsvRecordReader;
-import com.bc.inventory.utils.DateUtils;
+import com.bc.inventory.utils.TimeUtils;
 import com.bc.inventory.utils.S2Integer;
-import com.bc.inventory.utils.Search;
-import com.bc.inventory.utils.SimpleRecord;
 import com.google.common.geometry.S2CellId;
 import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
@@ -32,7 +32,7 @@ import java.util.*;
 public class BitmapInventory implements Inventory {
 
     private static final long MINUTES_PER_MILLI = 60 * 1000;
-    private static final DateFormat DATE_FORMAT = DateUtils.createDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+    private static final DateFormat DATE_FORMAT = TimeUtils.createDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     private static final int DEFFAULT_MAX_LEVEL = 3;
     private static final String INDEX_FILENAME = "geo_index";
 
@@ -42,9 +42,8 @@ public class BitmapInventory implements Inventory {
 
     private int[] startTimes;
     private int[] endTimes;
-    private int[] bitmapIndices;
-    private ImmutableRoaringBitmap[] bitmaps;
     private DbFile.Reader reader;
+    private QuerySolver querySolver;
 
     public BitmapInventory(StreamFactory streamFactory) {
         this(streamFactory, false, DEFFAULT_MAX_LEVEL);
@@ -102,9 +101,17 @@ public class BitmapInventory implements Inventory {
         reader.readIndex();
         startTimes = reader.getStartTimes();
         endTimes = reader.getEndTimes();
-        bitmapIndices = reader.getBitmapIndices();
-        bitmaps = reader.getBitmaps();
+        int[] bitmapIndices = reader.getBitmapIndices();
+        ImmutableRoaringBitmap[] bitmaps = reader.getBitmaps();
+        
+        Index index = new BitmapIndex(startTimes, endTimes, bitmapIndices, bitmaps, maxLevel, reader);
+        querySolver = new QuerySolver(index, indexOnly);
         return startTimes.length;
+    }
+
+    @Override
+    public QueryResult query(Constrain constrain) {
+        return querySolver.query(constrain);
     }
 
     @Override
@@ -131,184 +138,62 @@ public class BitmapInventory implements Inventory {
             e.printStackTrace();
         }
     }
+    
+    static class BitmapIndex extends Index {
+        
+        private final int[] bitmapIndices;
+        private final ImmutableRoaringBitmap[] bitmaps;
+        private final int maxLevel;
+        private final DbFile.Reader dbReader;
+        
+        private S2Point lastPoint;
+        private int lastPointAsInt;
+        
+        private S2Polygon lastPolygon;
+        private ImmutableRoaringBitmap lastPolygonAsBitma;
 
-    @Override
-    public QueryResult query(Constrain constrain) {
-        SimpleRecord[] insituRecords = constrain.getInsituRecords();
-        int start = IndexCreator.startTimeInMin(constrain.getStartTime());   // can be -1
-        int end = IndexCreator.endTimeInMin(constrain.getEndTime());         // can be -1
-        int maxNumResults = constrain.getMaxNumResults();
-
-        if (insituRecords.length == 0) {
-            S2Polygon polygon = constrain.getPolygon();
-            boolean useOnlyProductStart = constrain.useOnlyProductStart();
-            List<Integer> productIDs = testOnIndex(start, end, useOnlyProductStart, null, polygon);
-            if (indexOnly) {
-                return new QueryResult(testPolygonOnData(productIDs, null, maxNumResults));
-            } else {
-                return new QueryResult(testPolygonOnData(productIDs, polygon, maxNumResults));
-            }
-        } else {
-            Map<Integer, List<S2Point>> candidatesMap = new HashMap<>();
-            for (SimpleRecord insituRecord : insituRecords) {
-                long delta = constrain.getTimeDelta();
-                boolean useOnlyProductStart = constrain.useOnlyProductStart();
-                long insituRecordTime = insituRecord.getTime();
-                int insituStart = start;
-                int insituEnd = end;
-                if (delta != -1 && insituRecordTime != -1) {
-                    insituStart = IndexCreator.startTimeInMin(insituRecordTime - delta);
-                    insituEnd = IndexCreator.endTimeInMin(insituRecordTime + delta);
-                    if (end != -1 && end < insituStart) {
-                        continue;
-                    }
-                    if (start != -1 && start > insituEnd) {
-                        continue;
-                    }
-                    useOnlyProductStart = false; // for time-matchups always precise time checks
-                }
-                S2Point s2Point = insituRecord.getAsPoint();
-                List<Integer> productIDs = testOnIndex(insituStart, insituEnd, useOnlyProductStart, s2Point, null);
-                if (!productIDs.isEmpty()) {
-                    for (Integer match : productIDs) {
-                        List<S2Point> candidateProducts = candidatesMap.get(match);
-                        if (candidateProducts == null) {
-                            candidateProducts = new ArrayList<>();
-                            candidatesMap.put(match, candidateProducts);
-                        }
-                        candidateProducts.add(s2Point);
-                    }
-                }
-            }
-            List<String> paths;
-            if (indexOnly) {
-                paths = new ArrayList<>(candidatesMap.size());
-                for (Integer productID : candidatesMap.keySet()) {
-                    paths.add("index_only:" + productID);
-                }
-            } else {
-                paths = testPointsOnData(candidatesMap, maxNumResults);
-            }
-            return new QueryResult(paths);
-        }
-    }
-
-    @SuppressWarnings("StatementWithEmptyBody")
-    private List<Integer> testOnIndex(int startTime, int endTime, boolean useOnlyProductStart, S2Point point, S2Polygon polygon) {
-        S2CellId s2CellId = null;
-        ImmutableRoaringBitmap polygonBitmap = null;
-        List<Integer> results = new ArrayList<>();
-        int productIndex;
-        if (startTime == -1) {
-            productIndex = 0;
-        } else {
-            productIndex = getIndexForTime(startTime);
-            if (productIndex == -1) {
-                return results;
-            }
+        BitmapIndex(int[] startTimes, int[] endTimes, int[] bitmapIndices, ImmutableRoaringBitmap[] bitmaps, int maxLevel, DbFile.Reader dbReader) {
+            super(startTimes, endTimes);
+            this.bitmapIndices = bitmapIndices;
+            this.bitmaps = bitmaps;
+            this.maxLevel = maxLevel;
+            this.dbReader = dbReader;
         }
 
-        while (true) {
-            if (productIndex >= startTimes.length) {
-                break;
+        @Override
+        public boolean containsPoint(int productIndex, S2Point point) {
+            if (point != lastPoint) {
+                S2CellId lastPointAsS2CellId = S2CellId.fromPoint(point);
+                lastPointAsInt = S2Integer.asIntAtLevel(lastPointAsS2CellId, maxLevel);
+                lastPoint = point;
             }
-            if (useOnlyProductStart) {
-                if (endTime != -1 && startTimes[productIndex] >= endTime) {
-                    break;
-                } else if (startTime != -1 && startTimes[productIndex] < startTime) {
-                    // this product starts too early, skip
-                    productIndex++;
-                    continue;
-                }
-            } else {
-                if (endTime != -1 && startTimes[productIndex] > endTime) {
-                    break;
-                } else if (startTime != -1 && endTimes[productIndex] < startTime) {
-                    // this product ends too early, but the next could be longer
-                    productIndex++;
-                    continue;
-                }
-            }
-
-            // time matches, now test geo
-            if (point != null) {
-                if (s2CellId == null) {
-                    s2CellId = S2CellId.fromPoint(point);
-                }
-                ImmutableRoaringBitmap roaringBitmap = bitmaps[bitmapIndices[productIndex]];
-                if (roaringBitmap.contains(S2Integer.asIntAtLevel(s2CellId, maxLevel))) {
-                    results.add(productIndex);
-                }
-            } else if (polygon != null) {
-                if (polygonBitmap == null) {
-                    polygonBitmap = S2Integer.createCoverageBitmap(polygon, maxLevel);
-                }
-                ImmutableRoaringBitmap roaringBitmap = bitmaps[bitmapIndices[productIndex]];
-                if (ImmutableRoaringBitmap.intersects(roaringBitmap, polygonBitmap)) {
-                    results.add(productIndex);
-                }
-            } else {
-                results.add(productIndex);
-            }
-            productIndex++;
+            ImmutableRoaringBitmap roaringBitmap = bitmaps[bitmapIndices[productIndex]];
+            return roaringBitmap.contains(lastPointAsInt);
         }
-        return results;
-    }
 
-    private Collection<String> testPolygonOnData(List<Integer> uniqueProductList, S2Polygon searchPolygon, int numResults) {
-        uniqueProductList.sort(Comparator.comparingInt(o -> startTimes[o]));
-        List<String> matches = new ArrayList<>();
-        try {
-            for (Integer productID : uniqueProductList) {
-                reader.readEntry(productID);
-                if (searchPolygon == null || reader.getCurrentPolygon().intersects(searchPolygon)) {
-                    matches.add(reader.getCurrentPath());
-                    if (matches.size() == numResults) {
-                        return matches;
-                    }
-                }
+        @Override
+        public boolean intersectsPolygon(int productIndex, S2Polygon polygon) {
+            if (polygon != lastPolygon) {
+                lastPolygonAsBitma = S2Integer.createCoverageBitmap(polygon, maxLevel);
+                lastPolygon = polygon;
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+            ImmutableRoaringBitmap roaringBitmap = bitmaps[bitmapIndices[productIndex]];
+            return ImmutableRoaringBitmap.intersects(roaringBitmap, lastPolygonAsBitma);
         }
-        return matches;
-    }
 
-    private List<String> testPointsOnData(Map<Integer, List<S2Point>> candidatesMap, int maxNumResults) {
-
-        List<Integer> uniqueProductList = new ArrayList<>(candidatesMap.keySet());
-        uniqueProductList.sort(Comparator.comparingInt(o -> startTimes[o]));
-
-        List<String> matches = new ArrayList<>();
-        try {
-            for (Integer productID : uniqueProductList) {
-                reader.readEntry(productID);
-
-                S2Polygon polygon = reader.getCurrentPolygon();
-                List<S2Point> s2Points = candidatesMap.get(productID);
-                boolean pointInPolygon = false;
-                for (S2Point s2Point : s2Points) {
-                    if (polygon.contains(s2Point)) {
-                        pointInPolygon = true;
-                        break;
-                    }
-                }
-                if (pointInPolygon) {
-                    matches.add(reader.getCurrentPath());
-                    if (matches.size() == maxNumResults) {
-                        return matches;
-                    }
-                }
-            }
-            return matches;
-        } catch (IOException e) {
-            e.printStackTrace();
+        @Override
+        public void readEntry(int productIndex) throws IOException {
+            dbReader.readEntry(productIndex);            
         }
-        return matches;
-    }
 
-    private int getIndexForTime(int currentStartTime) {
-        return Search.indexedBinarySearch(startTimes, currentStartTime);
-    }
+        @Override
+        public S2Polygon getCurrentPolygon() throws IOException {
+            return dbReader.getCurrentPolygon();
+        }
 
+        @Override
+        public String getCurrentPath() throws IOException {
+            return dbReader.getCurrentPath();
+        }
+    }
 }

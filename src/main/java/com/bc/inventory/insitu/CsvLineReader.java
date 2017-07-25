@@ -16,7 +16,7 @@
 
 package com.bc.inventory.insitu;
 
-import com.bc.inventory.utils.DateUtils;
+import com.bc.inventory.utils.TimeUtils;
 
 import java.io.IOException;
 import java.io.LineNumberReader;
@@ -81,7 +81,7 @@ public class CsvLineReader {
             timeIndices = null;
         }
         if (headerParams.containsKey("dateFormat")) {
-            this.dateFormat = DateUtils.createDateFormat(headerParams.get("dateFormat"));
+            this.dateFormat = TimeUtils.createDateFormat(headerParams.get("dateFormat"));
         } else {
             this.dateFormat = dateFormat;
         }

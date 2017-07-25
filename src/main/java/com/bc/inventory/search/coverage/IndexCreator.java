@@ -1,6 +1,7 @@
 package com.bc.inventory.search.coverage;
 
 import com.bc.inventory.utils.S2Integer;
+import com.bc.inventory.utils.TimeUtils;
 import com.google.common.geometry.S2CellUnion;
 import com.google.common.geometry.S2Polygon;
 
@@ -17,8 +18,6 @@ import java.util.Set;
  * Creates or updates a coverage index
  */
 class IndexCreator {
-
-    private static final double MINUTES_PER_MILLI = 60.0 * 1000;
 
     private final int maxLevel;
     private final List<S2Integer.Coverage> coverages;
@@ -67,8 +66,8 @@ class IndexCreator {
 
         if (!allPaths.contains(path)) {
             IndexRecord record = new IndexRecord(path,
-                                                 startTimeInMin(startTime),
-                                                 endTimeInMin(endTime),
+                                                 TimeUtils.startTimeInMin(startTime),
+                                                 TimeUtils.endTimeInMin(endTime),
                                                  coverageId,
                                                  polygonBytes);
             indexRecords.add(record);
@@ -136,19 +135,6 @@ class IndexCreator {
             this.dataOffset = dataOffset;
         }
     }
-
-    static int startTimeInMin(long startTime) {
-        if (startTime == -1) {
-            return -1;
-        }
-        return (int) Math.floor(startTime / MINUTES_PER_MILLI);
-    }
-
-    static int endTimeInMin(long endTime) {
-        if (endTime == -1) {
-            return -1;
-        }
-        return (int) Math.ceil(endTime / MINUTES_PER_MILLI);
-    }
+    
 
 }
