@@ -75,11 +75,6 @@ public class CsvFastInventory implements Inventory {
         }
     }
 
-    @Override
-    public int numEntries() {
-        return csvRecordList != null ? csvRecordList.size() : 0;
-    }
-
     private List<String> test(long startTime, long endTime, S2Point point, S2Polygon polygon) {
         List<String> results = new ArrayList<>();
 
