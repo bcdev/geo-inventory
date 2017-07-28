@@ -1,8 +1,9 @@
 package com.bc.inventory.search;
 
 import com.bc.inventory.insitu.InsituRecords;
-import com.bc.inventory.search.coverage.CoverageInventory;
+import com.bc.inventory.search.compressed.CompressedInventory;
 import com.bc.inventory.search.bitmap.BitmapInventory;
+import com.bc.inventory.search.coverage.CoverageInventory;
 import com.bc.inventory.utils.Measurement;
 import com.bc.inventory.utils.MeasurementTable;
 import com.bc.inventory.utils.SimpleRecord;
@@ -39,11 +40,16 @@ public class Benchmark {
 //        measure("test", 7);
 
 //        measure("meris2005", 3);
+//        measure("meris2005", 3);
+//        measure("meris2005", 4);
 //        measure("meris2005", 5);
+//        measure("meris2005", 6);
 //        measure("modis2005");
 
 //        measure("meris", 3);
+        measure("meris", 4);
         measure("meris", 5);
+        measure("meris", 6);
 //        measure("modis_l3");
 //        measure("GUF");
 
@@ -61,27 +67,13 @@ public class Benchmark {
 //        testQueries("CsvFast", mt, new CsvFastInventory(productListFile));
         {
             StreamFactory streamFactory = new FileStreamFactory(new File(baseDir, sensor+"_level"+Integer.toString(maxLevel)));
-//            testIndexCreation("C_Build", mt, "../"+productListFilename, new CoverageInventory(streamFactory, false, maxLevel));
-//            testIndexCreation("R_Build", mt, "../"+productListFilename, new RbInventory(streamFactory, false, maxLevel));
+//            testIndexCreation("Bit_Build", mt, "../"+productListFilename, new BitmapInventory(streamFactory, false, maxLevel));
+//            testIndexCreation("Cov_Build", mt, "../"+productListFilename, new CoverageInventory(streamFactory, false, maxLevel));
+//            testIndexCreation("Zip_Build", mt, "../"+productListFilename, new CompressedInventory(streamFactory, false, maxLevel));
 
-//            testQueries("C_Index", mt, new CoverageInventory(streamFactory, true, maxLevel));
-            testQueries("C_1", mt, new CoverageInventory(streamFactory, false, maxLevel));
-            testQueries("C_2", mt, new CoverageInventory(streamFactory, false, maxLevel));
-//            testQueries("C_3", mt, new CoverageInventory(streamFactory, false, maxLevel));
-
-//            testQueries("R_Index", mt, new RbInventory(streamFactory, true, maxLevel));
-            testQueries("R_1", mt, new BitmapInventory(streamFactory, false, maxLevel));
-            testQueries("R_2", mt, new BitmapInventory(streamFactory, false, maxLevel));
-//            testQueries("R_3", mt, new RbInventory(streamFactory, false, maxLevel));
-        }
-
-        {
-//            StreamFactory streamFactory = new FileStreamFactory(new File(baseDir, sensor + "_l5"));
-//            testIndexCreation("Ng5", mt, productListFilename, new NgInventory(streamFactory, false, 5));
-
-//            testQueries("NgI5", mt, new CoverageInventory(streamFactory, true, 5));
-//            testQueries("Ng5.1", mt, new CoverageInventory(streamFactory, false, 5));
-//            testQueries("Ng5.2", mt, new CoverageInventory(streamFactory, false, 5));
+            testQueries("Bit", mt, new BitmapInventory(streamFactory, false, maxLevel));
+            testQueries("Cov", mt, new CoverageInventory(streamFactory, false, maxLevel));
+            testQueries("Zip", mt, new CompressedInventory(streamFactory, false, maxLevel));
         }
         mt.printMeasurements();
     }
@@ -93,11 +85,12 @@ public class Benchmark {
     }
 
     private static void testQueries(String label, MeasurementTable mt, Inventory inventory) throws IOException {
-        try (Measurement m = new Measurement("load inventory", label, mt)) {
-            m.setNumProducts(inventory.loadIndex());
-        }
+//        try (Measurement m = new Measurement("load inventory", label, mt)) {
+//            m.setNumProducts(inventory.loadIndex());
+//        }
         for (Constrain constrain : constrains) {
             try (Measurement m = new Measurement(constrain.getQueryName(), label, mt)) {
+                inventory.loadIndex();
                 QueryResult queryResult = inventory.query(constrain);
                 m.setNumProducts(queryResult.getPaths().size());
             }
