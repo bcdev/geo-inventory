@@ -1,4 +1,4 @@
-package com.bc.inventory.search.bitmap;
+package com.bc.inventory.utils;
 
 import com.google.common.geometry.*;
 
@@ -10,9 +10,9 @@ import java.nio.ByteBuffer;
 /**
  * Methods to interact with S2 objects
  */
-class S2Utils {
+public class S2Utils {
 
-    static byte[] asBytes(S2Polygon polygon) throws IOException {
+    public static byte[] asBytes(S2Polygon polygon) throws IOException {
         S2Loop loop = polygon.loop(0);
         int numVertices = loop.numVertices();
         final int numBytes = 4 + numVertices * 3 * 4 + 4 * 4 + 4 + 1;
@@ -45,11 +45,11 @@ class S2Utils {
         return baos.toByteArray();
     }
 
-    static S2Polygon asPolygon(byte[] polygonBytes) {
+    public static S2Polygon asPolygon(byte[] polygonBytes) {
         return asPolygon(ByteBuffer.wrap(polygonBytes));
     }
 
-    static S2Polygon asPolygon(ByteBuffer bb) {
+    public static S2Polygon asPolygon(ByteBuffer bb) {
         int numLoopPoints = bb.getInt();
 
         S2Point[] vertices = new S2Point[numLoopPoints];
