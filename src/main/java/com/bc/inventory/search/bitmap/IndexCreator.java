@@ -1,6 +1,7 @@
 package com.bc.inventory.search.bitmap;
 
 import com.bc.inventory.utils.S2Integer;
+import com.bc.inventory.utils.S2Utils;
 import com.bc.inventory.utils.TimeUtils;
 import com.google.common.geometry.S2Polygon;
 import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
@@ -34,10 +35,9 @@ class IndexCreator {
             reader.readIndex();
             int[] startTimes = reader.getStartTimes();
             int[] endTimes = reader.getEndTimes();
-            int[] bitmapIndices = reader.getBitmapIndices();
-            ImmutableRoaringBitmap[] roaringBitmaps = reader.getBitmaps();
 
-            for (ImmutableRoaringBitmap bitmap : roaringBitmaps) {
+            for (int i = 0; i < reader.numBitmaps(); i++) {
+                ImmutableRoaringBitmap bitmap = reader.getBitmap(i);
                 bitmapList.add(bitmap);
                 int index = bitmapList.size() - 1;
                 bitmapMap.put(bitmap, index);
@@ -46,7 +46,7 @@ class IndexCreator {
                 reader.readEntry(i);
                 String path = reader.getCurrentPath();
                 byte[] polygonBytes = reader.getCurrentPolygonBytes();
-                indexRecords.add(new Entry(startTimes[i], endTimes[i], bitmapIndices[i], path, polygonBytes));
+                indexRecords.add(new Entry(startTimes[i], endTimes[i], reader.getBitmapIndex(i), path, polygonBytes));
             }
         }
     }

@@ -1,7 +1,7 @@
 package com.bc.inventory.search.bitmap;
 
 /**
- * An entryin the geo inventory
+ * An entry in the geo inventory
  */
 class Entry {
 

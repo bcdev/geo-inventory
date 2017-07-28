@@ -96,10 +96,8 @@ public class BitmapInventory implements Inventory {
         reader.readIndex();
         startTimes = reader.getStartTimes();
         endTimes = reader.getEndTimes();
-        int[] bitmapIndices = reader.getBitmapIndices();
-        ImmutableRoaringBitmap[] bitmaps = reader.getBitmaps();
-        
-        Index index = new BitmapIndex(startTimes, endTimes, bitmapIndices, bitmaps, maxLevel, reader);
+
+        Index index = new BitmapIndex(startTimes, endTimes, maxLevel, reader);
         querySolver = new QuerySolver(index, indexOnly);
         return startTimes.length;
     }
@@ -127,8 +125,6 @@ public class BitmapInventory implements Inventory {
     
     static class BitmapIndex extends Index {
         
-        private final int[] bitmapIndices;
-        private final ImmutableRoaringBitmap[] bitmaps;
         private final int maxLevel;
         private final DbFile.Reader dbReader;
         
@@ -138,10 +134,8 @@ public class BitmapInventory implements Inventory {
         private S2Polygon lastPolygon;
         private ImmutableRoaringBitmap lastPolygonAsBitma;
 
-        BitmapIndex(int[] startTimes, int[] endTimes, int[] bitmapIndices, ImmutableRoaringBitmap[] bitmaps, int maxLevel, DbFile.Reader dbReader) {
+        BitmapIndex(int[] startTimes, int[] endTimes, int maxLevel, DbFile.Reader dbReader) {
             super(startTimes, endTimes);
-            this.bitmapIndices = bitmapIndices;
-            this.bitmaps = bitmaps;
             this.maxLevel = maxLevel;
             this.dbReader = dbReader;
         }
@@ -153,7 +147,8 @@ public class BitmapInventory implements Inventory {
                 lastPointAsInt = S2Integer.asIntAtLevel(lastPointAsS2CellId, maxLevel);
                 lastPoint = point;
             }
-            ImmutableRoaringBitmap roaringBitmap = bitmaps[bitmapIndices[productIndex]];
+            int bitmapIndex = dbReader.getBitmapIndex(productIndex);
+            ImmutableRoaringBitmap roaringBitmap = dbReader.getBitmap(bitmapIndex);
             return roaringBitmap.contains(lastPointAsInt);
         }
 
@@ -163,7 +158,8 @@ public class BitmapInventory implements Inventory {
                 lastPolygonAsBitma = S2Integer.createCoverageBitmap(polygon, maxLevel);
                 lastPolygon = polygon;
             }
-            ImmutableRoaringBitmap roaringBitmap = bitmaps[bitmapIndices[productIndex]];
+            int bitmapIndex = dbReader.getBitmapIndex(productIndex);
+            ImmutableRoaringBitmap roaringBitmap = dbReader.getBitmap(bitmapIndex);
             return ImmutableRoaringBitmap.intersects(roaringBitmap, lastPolygonAsBitma);
         }
 

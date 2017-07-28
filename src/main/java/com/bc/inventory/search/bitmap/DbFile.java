@@ -1,5 +1,6 @@
 package com.bc.inventory.search.bitmap;
 
+import com.bc.inventory.utils.S2Utils;
 import com.google.common.geometry.S2Polygon;
 import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
@@ -69,6 +70,11 @@ class DbFile {
             for (Entry record : indexRecords) {
                 dos.writeInt(record.bitmapId);
             }
+            int offset = 0;
+            for (ImmutableRoaringBitmap roaringBitmap : bitmaps) {
+                dos.writeInt(offset);
+                offset += roaringBitmap.serializedSizeInBytes();
+            }
             for (ImmutableRoaringBitmap roaringBitmap : bitmaps) {
                 roaringBitmap.serialize(dos);
             }
@@ -127,6 +133,8 @@ class DbFile {
         private int[] startTimes;
         private int[] endTimes;
         private int[] bitmapIds;
+        private int[] bitmapOffsets;
+        private ByteBuffer bitmapBuffer;
         private int currentEntryId = -1;
         private int currentBlockId = -1;
         private int[] blockSizes;
@@ -157,7 +165,7 @@ class DbFile {
             int numBitmaps = iis.readInt();
             int bitmapSize = iis.readInt();
 
-            ByteBuffer bb = ByteBuffer.allocate(3 * 4 * numEntries + bitmapSize);
+            ByteBuffer bb = ByteBuffer.allocate(3 * 4 * numEntries + 4 * numBitmaps);
             iis.readFully(bb.array());
 
             IntBuffer intBuffer = bb.asIntBuffer();
@@ -167,13 +175,13 @@ class DbFile {
             intBuffer.get(endTimes);
             bitmapIds = new int[numEntries];
             intBuffer.get(bitmapIds);
-            bb.position(bb.position() + 3 * 4 * numEntries);
+            bitmapOffsets = new int[numBitmaps];
+            intBuffer.get(bitmapOffsets);
 
+            bitmapBuffer = ByteBuffer.allocate(bitmapSize);
+            iis.readFully(bitmapBuffer.array());
             bitmaps = new ImmutableRoaringBitmap[numBitmaps];
-            for (int i = 0; i < bitmaps.length; i++) {
-                bitmaps[i] = new ImmutableRoaringBitmap(bb);
-                bb.position(bb.position() + bitmaps[i].serializedSizeInBytes());
-            }
+
             int numBlocks = getNumBlocks(numEntries, blockSize);
             blockSizes = readIntArray(numBlocks);
             blockOffsets = new int[blockSizes.length];
@@ -195,12 +203,20 @@ class DbFile {
             return endTimes;
         }
 
-        int[] getBitmapIndices() {
-            return bitmapIds;
+        int numBitmaps() {
+            return bitmaps.length;
         }
 
-        ImmutableRoaringBitmap[] getBitmaps() throws IOException {
-            return bitmaps;
+        int getBitmapIndex(int index) {
+            return bitmapIds[index];
+        }
+
+        ImmutableRoaringBitmap getBitmap(int index) {
+            if (bitmaps[index] == null) {
+                bitmapBuffer.position(bitmapOffsets[index]);
+                bitmaps[index] = new ImmutableRoaringBitmap(bitmapBuffer);
+            }
+            return bitmaps[index];
         }
 
         void readEntry(int entryId) throws IOException {
