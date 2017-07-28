@@ -56,11 +56,9 @@ public class DbFileTest {
             reader.readIndex();
             assertArrayEquals(new int[]{0}, reader.getStartTimes());
             assertArrayEquals(new int[]{5}, reader.getEndTimes());
-            assertArrayEquals(new int[]{0}, reader.getBitmapIndices());
-
-            ImmutableRoaringBitmap[] bitmaps = reader.getBitmaps();
-            assertEquals(1, bitmaps.length);
-            assertEquals(roaringBitmap, bitmaps[0]);
+            assertEquals(0, reader.getBitmapIndex(0));
+            assertEquals(1, reader.numBitmaps());
+            assertEquals(roaringBitmap, reader.getBitmap(0));
 
             testEntry(reader, 0);
         }
@@ -81,11 +79,10 @@ public class DbFileTest {
             reader.readIndex();
             assertArrayEquals(new int[]{0,1}, reader.getStartTimes());
             assertArrayEquals(new int[]{5,6}, reader.getEndTimes());
-            assertArrayEquals(new int[]{0,0}, reader.getBitmapIndices());
-
-            ImmutableRoaringBitmap[] bitmaps = reader.getBitmaps();
-            assertEquals(1, bitmaps.length);
-            assertEquals(roaringBitmap, bitmaps[0]);
+            assertEquals(0, reader.getBitmapIndex(0));
+            assertEquals(0, reader.getBitmapIndex(1));
+            assertEquals(1, reader.numBitmaps());
+            assertEquals(roaringBitmap, reader.getBitmap(0));
 
             testEntry(reader, 0);
         }
@@ -117,11 +114,11 @@ public class DbFileTest {
             reader.readIndex();
             assertArrayEquals(new int[]{0,1,2,3,4,5,6,7}, reader.getStartTimes());
             assertArrayEquals(new int[]{5,6,7,8,9,10,11,12}, reader.getEndTimes());
-            assertArrayEquals(new int[]{0,0,0,0,0,0,0,0}, reader.getBitmapIndices());
-
-            ImmutableRoaringBitmap[] bitmaps = reader.getBitmaps();
-            assertEquals(1, bitmaps.length);
-            assertEquals(roaringBitmap, bitmaps[0]);
+            for (int i = 0; i < 8; i++) {
+                assertEquals(0, reader.getBitmapIndex(i));
+            }
+            assertEquals(1, reader.numBitmaps());
+            assertEquals(roaringBitmap, reader.getBitmap(0));
 
             testEntry(reader, 0);
             testEntry(reader, 1);
