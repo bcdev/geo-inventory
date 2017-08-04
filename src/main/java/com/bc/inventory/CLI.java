@@ -5,7 +5,6 @@ import com.bc.inventory.search.Constrain;
 import com.bc.inventory.search.FileStreamFactory;
 import com.bc.inventory.search.QueryResult;
 import com.bc.inventory.search.StreamFactory;
-import com.bc.inventory.search.bitmap.BitmapInventory;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -60,41 +59,41 @@ public class CLI {
     }
 
     private static void create(StreamFactory streamFactory, String csvFile) throws IOException {
-        BitmapInventory inventory = new BitmapInventory(streamFactory);
-        inventory.createIndex(csvFile);
+//        BitmapInventory inventory = new BitmapInventory(streamFactory);
+//        inventory.createIndex(csvFile);
     }
 
     private static void dump(StreamFactory streamFactory, String csvFile) throws IOException {
-        BitmapInventory inventory = new BitmapInventory(streamFactory);
-        inventory.loadIndex();
-        inventory.dumpDB(csvFile);
+//        BitmapInventory inventory = new BitmapInventory(streamFactory);
+//        inventory.loadIndex();
+//        inventory.dumpDB(csvFile);
     }
 
     private static void update(StreamFactory streamFactory, String csvFile) throws IOException {
-        BitmapInventory inventory = new BitmapInventory(streamFactory);
-        inventory.updateIndex(csvFile);
+//        BitmapInventory inventory = new BitmapInventory(streamFactory);
+//        inventory.updateIndex(csvFile);
     }
 
     private static void query(StreamFactory streamFactory, String[] args) throws IOException {
-        BitmapInventory inventory = new BitmapInventory(streamFactory);
-        int numEntries = inventory.loadIndex();
-        System.out.println("numEntries in geoDB= " + numEntries);
-        Constrain constraints = parseConstraint(args);
-        System.out.println("Constraints = " + constraints);
-        long t1 = System.currentTimeMillis();
-        QueryResult queryResult = inventory.query(constraints);
-        long t2 = System.currentTimeMillis();
-        Collection<String> paths = queryResult.getPaths();
-        final String outputFilename = "geoDB_query_result.txt";
-        System.out.printf("Time needed: %dms%n", (t2-t1));
-        System.out.printf("Num results: %d%n", paths.size());
-        try(FileWriter fw = new FileWriter(outputFilename)) {
-            for (String path : paths) {
-                fw.append(path).append('\n');
-            }
-        }
-        System.out.println();
-        System.out.printf("Query result written to file: '%s'%n", outputFilename);
+//        BitmapInventory inventory = new BitmapInventory(streamFactory);
+//        int numEntries = inventory.loadIndex();
+//        System.out.println("numEntries in geoDB= " + numEntries);
+//        Constrain constraints = parseConstraint(args);
+//        System.out.println("Constraints = " + constraints);
+//        long t1 = System.currentTimeMillis();
+//        QueryResult queryResult = inventory.query(constraints);
+//        long t2 = System.currentTimeMillis();
+//        Collection<String> paths = queryResult.getPaths();
+//        final String outputFilename = "geoDB_query_result.txt";
+//        System.out.printf("Time needed: %dms%n", (t2-t1));
+//        System.out.printf("Num results: %d%n", paths.size());
+//        try(FileWriter fw = new FileWriter(outputFilename)) {
+//            for (String path : paths) {
+//                fw.append(path).append('\n');
+//            }
+//        }
+//        System.out.println();
+//        System.out.printf("Query result written to file: '%s'%n", outputFilename);
     }
 
     private static Constrain parseConstraint(String[] args) throws IOException {

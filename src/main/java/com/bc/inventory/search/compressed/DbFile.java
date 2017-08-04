@@ -31,17 +31,19 @@ class DbFile {
 
         private final DataOutputStream dos;
         private final int blockSize;
+        private final boolean useIndex;
 
-        Writer(OutputStream os) {
-            this(os, DEFAULT_BLOCK_SIZE);
+        Writer(OutputStream os, boolean useIndex) {
+            this(os, DEFAULT_BLOCK_SIZE,useIndex);
         }
 
-        public Writer(OutputStream os, int blockSize) {
+        public Writer(OutputStream os, int blockSize, boolean useIndex) {
             dos = new DataOutputStream(new BufferedOutputStream(os));
             this.blockSize = blockSize;
+            this.useIndex = useIndex;
         }
 
-        void write(List<Entry> indexRecords, List<S2Integer.Coverage> bitmaps) throws IOException {
+        void write(List<DbFile.Entry> indexRecords, List<S2Integer.Coverage> bitmaps) throws IOException {
             writeHeader();
             writeIndex(indexRecords, bitmaps);
             int numBlocks = getNumBlocks(indexRecords.size(), blockSize);
@@ -59,25 +61,28 @@ class DbFile {
             dos.write(FILE_MARKER.getBytes());
         }
 
-        void writeIndex(List<Entry> indexRecords, List<S2Integer.Coverage> bitmaps) throws IOException {
+        void writeIndex(List<DbFile.Entry> indexRecords, List<S2Integer.Coverage> bitmaps) throws IOException {
             dos.writeInt(indexRecords.size());
-            dos.writeInt(bitmaps.size());
-
-            for (Entry record : indexRecords) {
+            if(useIndex) {
+                dos.writeInt(bitmaps.size());
+            }
+            for (DbFile.Entry record : indexRecords) {
                 dos.writeInt(record.startTime);
             }
-            for (Entry record : indexRecords) {
+            for (DbFile.Entry record : indexRecords) {
                 dos.writeInt(record.endTime);
             }
-            for (Entry record : indexRecords) {
-                dos.writeInt(record.bitmapId);
-            }
-            for (S2Integer.Coverage s2Cover : bitmaps) {
-                dos.writeInt(s2Cover.intIds.length);
-            }
-            for (S2Integer.Coverage s2Cover : bitmaps) {
-                for (int intId : s2Cover.intIds) {
-                    dos.writeInt(intId);
+            if(useIndex) {
+                for (DbFile.Entry record : indexRecords) {
+                    dos.writeInt(record.coverageIndex);
+                }
+                for (S2Integer.Coverage s2Cover : bitmaps) {
+                    dos.writeInt(s2Cover.intIds.length);
+                }
+                for (S2Integer.Coverage s2Cover : bitmaps) {
+                    for (int intId : s2Cover.intIds) {
+                        dos.writeInt(intId);
+                    }
                 }
             }
         }
@@ -88,7 +93,7 @@ class DbFile {
             }
         }
 
-        private void writeBlock(int blockNumber, List<Entry> entries) throws IOException {
+        private void writeBlock(int blockNumber, List<DbFile.Entry> entries) throws IOException {
             int startIndex = blockNumber * blockSize;
             int endIndex = Math.min(startIndex + blockSize, entries.size());
 
@@ -103,7 +108,7 @@ class DbFile {
             }
         }
 
-        private int calculateBlockSize(int blockNumber, List<Entry> entries) throws IOException {
+        private int calculateBlockSize(int blockNumber, List<DbFile.Entry> entries) throws IOException {
             int startIndex = blockNumber * blockSize;
             int endIndex = Math.min(startIndex + blockSize, entries.size());
 
@@ -113,7 +118,7 @@ class DbFile {
             return bytesCompressedPath + bytesPolygonSizes + bytesPolygons;
         }
 
-        static int calculateSizePolygons(List<Entry> entries, int startIndex, int endIndex) {
+        static int calculateSizePolygons(List<DbFile.Entry> entries, int startIndex, int endIndex) {
             int bytesPolygons = 0;
             for (int i = startIndex; i < endIndex; i++) {
                 bytesPolygons += entries.get(i).polygonBytes.length;
@@ -131,13 +136,12 @@ class DbFile {
 
         private final ImageInputStream iis;
         private final int blockSize;
+        private final boolean useIndex;
         private int numEntries;
         private int[] startTimes;
         private int[] endTimes;
         private int[] bitmapIds;
-        private int[] bitmapOffsets;
         private int[] bitmapSizes;
-        private IntBuffer bitmapBuffer;
         private int currentEntryId = -1;
         private int currentBlockId = -1;
         private int[] blockSizes;
@@ -149,13 +153,14 @@ class DbFile {
         private int currentEntryInBlock;
         private int[][] coverages;
 
-        Reader(ImageInputStream iis) {
-            this(iis, DEFAULT_BLOCK_SIZE);
+        Reader(ImageInputStream iis, boolean useIndex) {
+            this(iis, DEFAULT_BLOCK_SIZE, useIndex);
         }
 
-        public Reader(ImageInputStream iis, int blockSize) {
+        public Reader(ImageInputStream iis, int blockSize, boolean useIndex) {
             this.iis = iis;
             this.blockSize = blockSize;
+            this.useIndex = useIndex;
         }
 
         void readIndex() throws IOException {
@@ -165,9 +170,15 @@ class DbFile {
                 throw new IllegalArgumentException("file header does not match");
             }
             numEntries = iis.readInt();
-            int numBitmaps = iis.readInt();
 
-            ByteBuffer bb = ByteBuffer.allocate(3 * 4 * numEntries + 4 * numBitmaps);
+            ByteBuffer bb;
+            int numBitmaps = 0;
+            if (useIndex) {
+                numBitmaps = iis.readInt();
+                bb = ByteBuffer.allocate(3 * 4 * numEntries + 4 * numBitmaps);
+            } else {
+                bb = ByteBuffer.allocate(2 * 4 * numEntries);
+            }
             iis.readFully(bb.array());
 
             IntBuffer intBuffer = bb.asIntBuffer();
@@ -175,25 +186,19 @@ class DbFile {
             intBuffer.get(startTimes);
             endTimes = new int[numEntries];
             intBuffer.get(endTimes);
-            bitmapIds = new int[numEntries];
-            intBuffer.get(bitmapIds);
-            bitmapSizes = new int[numBitmaps];
-            intBuffer.get(bitmapSizes);
+            
+            if (useIndex) {
+                bitmapIds = new int[numEntries];
+                intBuffer.get(bitmapIds);
+                bitmapSizes = new int[numBitmaps];
+                intBuffer.get(bitmapSizes);
 
-//            int numCoverageInts = 0;
-//            bitmapOffsets = new int[numBitmaps];
-//            for (int i = 0; i < bitmapSizes.length; i++) {
-//                bitmapOffsets[i] = numCoverageInts;
-//                numCoverageInts += bitmapSizes[i];
-//            }
-//            ByteBuffer bitmapByteBuffer = ByteBuffer.allocate(4 * numCoverageInts);
-//            iis.readFully(bitmapByteBuffer.array());
-//            bitmapBuffer = bitmapByteBuffer.asIntBuffer();
-            coverages = new int[numBitmaps][];
-            for (int i = 0; i < coverages.length; i++) {
-                coverages[i] = readIntArray(bitmapSizes[i]);
+                coverages = new int[numBitmaps][];
+                for (int i = 0; i < coverages.length; i++) {
+                    coverages[i] = readIntArray(bitmapSizes[i]);
+                }
             }
-
+            
             int numBlocks = getNumBlocks(numEntries, blockSize);
             blockSizes = readIntArray(numBlocks);
             blockOffsets = new int[blockSizes.length];
@@ -216,7 +221,7 @@ class DbFile {
         }
 
         int numBitmaps() {
-            return coverages.length;
+            return coverages == null ? 0 : coverages.length;
         }
 
         int getBitmapIndex(int index) {
@@ -224,12 +229,6 @@ class DbFile {
         }
 
         int[] getBitmap(int index) {
-//            if (coverages[index] == null) {
-//                int[] aCoverage = new int[bitmapSizes[index]];
-//                bitmapBuffer.position(bitmapOffsets[index]);
-//                bitmapBuffer.get(aCoverage, 0, aCoverage.length);
-//                coverages[index] = aCoverage;
-//            }
             return coverages[index];
         }
 
@@ -304,12 +303,29 @@ class DbFile {
         }
 
     }
+    
+    static class Entry {
+
+        final int startTime;
+        final int endTime;
+        final String path;
+        final byte[] polygonBytes;
+        final int coverageIndex;
+
+        Entry(int startTime, int endTime, String path, byte[] polygonBytes, int coverageIndex) {
+            this.startTime = startTime;
+            this.endTime = endTime;
+            this.path = path;
+            this.polygonBytes = polygonBytes;
+            this.coverageIndex = coverageIndex;
+        }
+    }
 
     static int getNumBlocks(int numEntries, int blockSize) {
         return (int) Math.ceil((float) numEntries / blockSize);
     }
 
-    static byte[] compressPaths(List<Entry> entries, int startIndex, int endIndex) throws IOException {
+    static byte[] compressPaths(List<DbFile.Entry> entries, int startIndex, int endIndex) throws IOException {
         String[] paths = new String[endIndex - startIndex];
         for (int entryIndex = startIndex, pathIndex = 0; entryIndex < endIndex; entryIndex++, pathIndex++) {
             paths[pathIndex] = entries.get(entryIndex).path;

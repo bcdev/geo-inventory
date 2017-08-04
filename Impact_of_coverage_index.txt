@@ -1,0 +1,44 @@
+
+                          |   meris_l4_true           |  meris_l4_false           |
+test                      |   products        time    |   products        time    |
+--------------------------+---------------------------+---------------------------+
+northsea                  |       7444        1757 ms |       7444        1662 ms |
+northsea (disk-cache)     |       7444         353 ms |       7444         775 ms |
+matchups 30k lat/lon/time |       3137        1749 ms |       3137        1776 ms |
+extracts 3 lat/lon        |       2898        1773 ms |       2898        1668 ms |
+
+                              modis_l4_true           |  modis_l4_false           
+
+--------------------------+---------------------------+---------------------------+
+northsea                  |      61395        1534 ms |      61395        1456 ms |
+northsea (disk-cache)     |      61395         644 ms |      61395         789 ms |
+matchups 30k lat/lon/time |       8692        1493 ms |       8692        1611 ms |
+extracts 3 lat/lon        |      15606        1547 ms |      15606        2290 ms |
+
+                              viirs_l4_true           |  viirs_l4_false           
+
+--------------------------+---------------------------+---------------------------+
+northsea                  |      31561         956 ms |      31561         941 ms |
+northsea (disk-cache)     |      31561         388 ms |      31561         475 ms |
+matchups 30k lat/lon/time |       3126         855 ms |       3126         838 ms |
+extracts 3 lat/lon        |       3221         978 ms |       3221        1056 ms |
+
+                            seawifs_l4_true           | seawifs_l4_false          
+
+--------------------------+---------------------------+---------------------------+
+northsea                  |      13067        1114 ms |      13067         982 ms |
+northsea (disk-cache)     |      13067         225 ms |      13067         380 ms |
+matchups 30k lat/lon/time |       6561        1060 ms |       6561         917 ms |
+extracts 3 lat/lon        |       5396        1107 ms |       5396         951 ms |
+
+                             S2_L1C_l9_true           | S2_L1C_l9_false          
+
+--------------------------+---------------------------+---------------------------+
+northsea                  |      11110         240 ms |      11110         210 ms |
+northsea (disk-cache)     |      11110          61 ms |      11110          80 ms |
+
+                             S2_L1C_l4_true           | S2_L1C_l4_false
+
+--------------------------+---------------------------+--------------------------
+northsea                  |      11110         206 ms |      11110         181 ms
+northsea (disk-cache)     |      11110          55 ms |      11110          88 ms

@@ -20,14 +20,14 @@ import java.util.Map;
  */
 public class QuerySolver {
     
-    private final Index index;
+    private final GeoIndex index;
     private final boolean indexOnly;
 
-    public QuerySolver(Index index) {
+    public QuerySolver(GeoIndex index) {
         this(index, false);
     }
     
-    public QuerySolver(Index index, boolean indexOnly) {
+    public QuerySolver(GeoIndex index, boolean indexOnly) {
         this.index = index;
         this.indexOnly = indexOnly;
     }

@@ -53,7 +53,7 @@ public class CompareStorageSizesMain {
                 break;
             }
             lastCovLength = eStat.covSize;
-            if (eRatio > 1.5) {
+            if (eRatio > 2.0) {
                 continue;
             }
             CoveragStat iStat = CoveragStat.create(coverer.getInteriorCovering(s2Polygon), maxLevel);
@@ -62,8 +62,8 @@ public class CompareStorageSizesMain {
             int eBytes = eStat.roaringBitmap.serializedSizeInBytes();
             int iBytes = iStat.roaringBitmap.serializedSizeInBytes();
             System.out.printf(format, maxLevel,
-                    eRatio, eStat.covSize*4, eStat.deNormCovSize, eBytes, eStat.compressed.length*4,
-                    iStat.area / area, iStat.covSize*4, iStat.deNormCovSize, iBytes, iStat.compressed.length*4
+                    eRatio, eStat.covSize*4, eStat.deNormCovSize*4, eBytes, eStat.compressed.length*4,
+                    iStat.area / area, iStat.covSize*4, iStat.deNormCovSize*4, iBytes, iStat.compressed.length*4
             );
             System.out.println();
         }

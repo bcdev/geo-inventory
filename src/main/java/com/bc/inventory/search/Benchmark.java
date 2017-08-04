@@ -1,9 +1,6 @@
 package com.bc.inventory.search;
 
 import com.bc.inventory.insitu.InsituRecords;
-import com.bc.inventory.search.compressed.CompressedInventory;
-import com.bc.inventory.search.bitmap.BitmapInventory;
-import com.bc.inventory.search.coverage.CoverageInventory;
 import com.bc.inventory.utils.Measurement;
 import com.bc.inventory.utils.MeasurementTable;
 import com.bc.inventory.utils.SimpleRecord;
@@ -35,63 +32,45 @@ public class Benchmark {
         }
         constrains = createConstrains();
 
-//        measure("test", 3);
-//        measure("test", 5);
-//        measure("test", 7);
+        MeasurementTable mt = new MeasurementTable("Benchmark");
+        measureGeoDB(mt, "meris", 4, true);
+        measureGeoDB(mt, "meris", 4, false);
 
-//        measure("meris2005", 3);
-//        measure("meris2005", 3);
-//        measure("meris2005", 4);
-//        measure("meris2005", 5);
-//        measure("meris2005", 6);
-//        measure("modis2005");
+        measureGeoDB(mt, "modis", 4, true);
+        measureGeoDB(mt, "modis", 4, false);
 
-//        measure("meris", 3);
-        measure("meris", 4);
-        measure("meris", 5);
-        measure("meris", 6);
-//        measure("modis_l3");
-//        measure("GUF");
+        measureGeoDB(mt, "viirs", 4, true);
+        measureGeoDB(mt, "viirs", 4, false);
 
-//        measure("S2_L1C", 3);
-//        measure("S2_L1C", 9);
-
-    }
-
-    private static void measure(String sensor, int maxLevel) throws IOException {
-        MeasurementTable mt = new MeasurementTable(sensor+"_level"+Integer.toString(maxLevel));
-        String productListFilename = sensor + "_products_list.csv";
-        File productListFile = new File(baseDir, productListFilename);
-
-//        testQueries("CSV", mt, new CsvInventory(productListFile));
-//        testQueries("CsvFast", mt, new CsvFastInventory(productListFile));
-        {
-            StreamFactory streamFactory = new FileStreamFactory(new File(baseDir, sensor+"_level"+Integer.toString(maxLevel)));
-//            testIndexCreation("Bit_Build", mt, "../"+productListFilename, new BitmapInventory(streamFactory, false, maxLevel));
-//            testIndexCreation("Cov_Build", mt, "../"+productListFilename, new CoverageInventory(streamFactory, false, maxLevel));
-//            testIndexCreation("Zip_Build", mt, "../"+productListFilename, new CompressedInventory(streamFactory, false, maxLevel));
-
-            testQueries("Bit", mt, new BitmapInventory(streamFactory, false, maxLevel));
-            testQueries("Cov", mt, new CoverageInventory(streamFactory, false, maxLevel));
-            testQueries("Zip", mt, new CompressedInventory(streamFactory, false, maxLevel));
-        }
+        measureGeoDB(mt, "seawifs", 4, true);
+        measureGeoDB(mt, "seawifs", 4, false);
+        
+        measureGeoDB(mt, "S2_L1C", 4, true);
+        measureGeoDB(mt, "S2_L1C", 4, false);
+        
         mt.printMeasurements();
     }
 
-    private static void testIndexCreation(String label, MeasurementTable mt, String productListFilename, Inventory inventory) throws IOException {
-        try (Measurement m = new Measurement("create index", label, mt)) {
-            m.setNumProducts(inventory.createIndex(productListFilename));
-        }
-    }
+    private static void measureGeoDB(MeasurementTable mt, String sensor, int maxLevel, boolean useIndex) throws IOException {
+        String label = sensor + "_l" + maxLevel + "_" + Boolean.toString(useIndex);
+        String productListFilename = sensor + "_products_list.csv";
+        StreamFactory streamFactory = new FileStreamFactory(baseDir);
 
-    private static void testQueries(String label, MeasurementTable mt, Inventory inventory) throws IOException {
-//        try (Measurement m = new Measurement("load inventory", label, mt)) {
-//            m.setNumProducts(inventory.loadIndex());
-//        }
+        String indexFilename = "GEO" + "/data_" + sensor + "_level" + Integer.toString(maxLevel);
+        if (useIndex) {
+            indexFilename = "GEO" + "/index_" + sensor + "_level" + Integer.toString(maxLevel);
+        }
+        Actions actions = new Actions(streamFactory, indexFilename, maxLevel, useIndex);
+
+        if (!streamFactory.exists(indexFilename)) {
+            try (Measurement m = new Measurement("create/update DB", label, mt)) {
+                m.setNumProducts(actions.updateIndex(productListFilename));
+            }
+        }
+
         for (Constrain constrain : constrains) {
             try (Measurement m = new Measurement(constrain.getQueryName(), label, mt)) {
-                inventory.loadIndex();
-                QueryResult queryResult = inventory.query(constrain);
+                QueryResult queryResult = actions.query(constrain);
                 m.setNumProducts(queryResult.getPaths().size());
             }
         }
@@ -103,6 +82,7 @@ public class Benchmark {
 
         List<Constrain.Builder> cbs = new ArrayList<>();
         cbs.add(new Constrain.Builder("northsea").polygon(NORTHSEA_WKT));
+        cbs.add(new Constrain.Builder("northsea2").polygon(NORTHSEA_WKT));
         cbs.add(new Constrain.Builder("acadia, 1 year").polygon(ACADIA_WKT).startDate("2005-01-01").endDate("2006-01-01"));
         cbs.add(new Constrain.Builder("northsea, 1 year").polygon(NORTHSEA_WKT).startDate("2005-01-01").endDate("2006-01-01"));
         cbs.add(new Constrain.Builder("northsea, 1 year, #100").polygon(NORTHSEA_WKT).startDate("2005-01-01").endDate("2006-01-01").maxNumResults(100));
