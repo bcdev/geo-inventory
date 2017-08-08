@@ -9,20 +9,21 @@ import java.io.OutputStream;
 import java.util.Iterator;
 import java.util.List;
 
-public class Actions {
+public class SimpleFascade implements Fascade {
 
     private final StreamFactory streamFactory;
     private final String indexFilename;
     private final int maxLevel;
     private final boolean useIndex;
 
-    public Actions(StreamFactory streamFactory, String indexFilename, int maxLevel, boolean useIndex) {
+    public SimpleFascade(StreamFactory streamFactory, String indexFilename, int maxLevel, boolean useIndex) {
         this.streamFactory = streamFactory;
         this.indexFilename = indexFilename;
         this.maxLevel = maxLevel;
         this.useIndex = useIndex;
     }
 
+    @Override
     public int updateIndex(String... filenames) throws IOException {
         GeoDb db = new CompressedGeoDb(maxLevel, useIndex);
         if (streamFactory.exists(indexFilename)) {
@@ -44,6 +45,7 @@ public class Actions {
         return dbUpdater.write(os);
     }
 
+    @Override
     public List<String> query(Constrain constrain) throws IOException {
         CompressedGeoDb compressedGeoDb = new CompressedGeoDb(maxLevel, useIndex);
         ImageInputStream iis = streamFactory.createImageInputStream(indexFilename);

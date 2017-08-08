@@ -60,17 +60,17 @@ public class Benchmark {
         if (useIndex) {
             indexFilename = "GEO" + "/index_" + sensor + "_level" + Integer.toString(maxLevel);
         }
-        Actions actions = new Actions(streamFactory, indexFilename, maxLevel, useIndex);
+        Fascade fascade = new SimpleFascade(streamFactory, indexFilename, maxLevel, useIndex);
 
         if (!streamFactory.exists(indexFilename)) {
             try (Measurement m = new Measurement("create/update DB", label, mt)) {
-                m.setNumProducts(actions.updateIndex(productListFilename));
+                m.setNumProducts(fascade.updateIndex(productListFilename));
             }
         }
 
         for (Constrain constrain : constrains) {
             try (Measurement m = new Measurement(constrain.getQueryName(), label, mt)) {
-                List<String> queryResult = actions.query(constrain);
+                List<String> queryResult = fascade.query(constrain);
                 m.setNumProducts(queryResult.size());
             }
         }
