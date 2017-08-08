@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * A "database" that stores information about EO products to enable
@@ -17,10 +18,8 @@ public interface GeoDb {
     void close() throws IOException;
 
     Iterator<GeoDbEntry> entries() throws IOException;
-
-    void addEntry(GeoDbEntry entry) throws IOException;
-
-    int write(OutputStream os) throws IOException;
     
-    QueryResult query(Constrain constrain);
+    GeoDbUpdater getDbUpdater();
+
+    List<String> query(Constrain constrain);
 }

@@ -2,14 +2,11 @@ package com.bc.inventory.search;
 
 import com.bc.inventory.utils.SimpleRecord;
 import com.bc.inventory.utils.TimeUtils;
-import com.google.common.geometry.S2CellId;
 import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
-import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -21,18 +18,12 @@ import java.util.Map;
 public class QuerySolver {
     
     private final GeoIndex index;
-    private final boolean indexOnly;
 
     public QuerySolver(GeoIndex index) {
-        this(index, false);
-    }
-    
-    public QuerySolver(GeoIndex index, boolean indexOnly) {
         this.index = index;
-        this.indexOnly = indexOnly;
     }
     
-    public QueryResult query(Constrain constrain) {
+    public List<String> query(Constrain constrain) {
         SimpleRecord[] insituRecords = constrain.getInsituRecords();
         int start = TimeUtils.startTimeInMin(constrain.getStartTime());   // can be -1
         int end = TimeUtils.endTimeInMin(constrain.getEndTime());         // can be -1
@@ -42,11 +33,7 @@ public class QuerySolver {
             S2Polygon polygon = constrain.getPolygon();
             boolean useOnlyProductStart = constrain.useOnlyProductStart();
             List<Integer> productIDs = testOnIndex(start, end, useOnlyProductStart, null, polygon);
-            if (indexOnly) {
-                return new QueryResult(testPolygonOnData(productIDs, null, maxNumResults));
-            } else {
-                return new QueryResult(testPolygonOnData(productIDs, polygon, maxNumResults));
-            }
+            return testPolygonOnData(productIDs, polygon, maxNumResults);
         } else {
             Map<Integer, List<S2Point>> candidatesMap = new HashMap<>();
             for (SimpleRecord insituRecord : insituRecords) {
@@ -70,33 +57,16 @@ public class QuerySolver {
                 List<Integer> productIDs = testOnIndex(insituStart, insituEnd, useOnlyProductStart, s2Point, null);
                 if (!productIDs.isEmpty()) {
                     for (Integer match : productIDs) {
-                        List<S2Point> candidateProducts = candidatesMap.get(match);
-                        if (candidateProducts == null) {
-                            candidateProducts = new ArrayList<>();
-                            candidatesMap.put(match, candidateProducts);
-                        }
-                        candidateProducts.add(s2Point);
+                        candidatesMap.computeIfAbsent(match, k -> new ArrayList<>()).add(s2Point);
                     }
                 }
             }
-            List<String> paths;
-            if (indexOnly) {
-                paths = new ArrayList<>(candidatesMap.size());
-                for (Integer productID : candidatesMap.keySet()) {
-                    paths.add("index_only:" + productID);
-                }
-            } else {
-                paths = testPointsOnData(candidatesMap, maxNumResults);
-            }
-            return new QueryResult(paths);
+            return testPointsOnData(candidatesMap, maxNumResults);
         }
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     private List<Integer> testOnIndex(int startTime, int endTime, boolean useOnlyProductStart, S2Point point, S2Polygon
         polygon) {
-        S2CellId s2CellId = null;
-        ImmutableRoaringBitmap polygonBitmap = null;
         List<Integer> results = new ArrayList<>();
         int productIndex;
         if (startTime == -1) {
@@ -132,11 +102,11 @@ public class QuerySolver {
 
             // time matches, now test geo
             if (point != null) {
-                if (index.containsPoint(productIndex, point)) {
+                if (index.approximationContainsPoint(productIndex, point)) {
                     results.add(productIndex);
                 }
             } else if (polygon != null) {
-                if (index.intersectsPolygon(productIndex, polygon)) {
+                if (index.approximationIntersectsPolygon(productIndex, polygon)) {
                     results.add(productIndex);
                 }
             } else {
@@ -147,7 +117,7 @@ public class QuerySolver {
         return results;
     }
 
-    private Collection<String> testPolygonOnData( List<Integer> uniqueProductList, S2Polygon searchPolygon, int numResults) {
+    private List<String> testPolygonOnData( List<Integer> uniqueProductList, S2Polygon searchPolygon, int numResults) {
             
         uniqueProductList.sort(Comparator.comparingInt(index::getStartTime));
         List<String> matches = new ArrayList<>();

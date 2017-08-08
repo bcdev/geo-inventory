@@ -15,9 +15,9 @@ public interface GeoIndex {
 
     int getIndexForTime(int currentStartTime);
 
-    boolean containsPoint(int productIndex, S2Point point);
+    boolean approximationContainsPoint(int productIndex, S2Point point);
 
-    boolean intersectsPolygon(int productIndex, S2Polygon polygon);
+    boolean approximationIntersectsPolygon(int productIndex, S2Polygon polygon);
 
     void readEntry(int productIndex) throws IOException;
 

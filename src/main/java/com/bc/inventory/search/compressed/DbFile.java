@@ -37,7 +37,7 @@ class DbFile {
             this(os, DEFAULT_BLOCK_SIZE,useIndex);
         }
 
-        public Writer(OutputStream os, int blockSize, boolean useIndex) {
+        Writer(OutputStream os, int blockSize, boolean useIndex) {
             dos = new DataOutputStream(new BufferedOutputStream(os));
             this.blockSize = blockSize;
             this.useIndex = useIndex;
@@ -157,7 +157,7 @@ class DbFile {
             this(iis, DEFAULT_BLOCK_SIZE, useIndex);
         }
 
-        public Reader(ImageInputStream iis, int blockSize, boolean useIndex) {
+        Reader(ImageInputStream iis, int blockSize, boolean useIndex) {
             this.iis = iis;
             this.blockSize = blockSize;
             this.useIndex = useIndex;

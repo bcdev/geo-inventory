@@ -2,6 +2,7 @@ package com.bc.inventory.search.csv;
 
 import com.bc.geometry.s2.S2WKTReader;
 import com.bc.inventory.utils.TimeUtils;
+import com.google.common.collect.Lists;
 import com.google.common.geometry.S2Polygon;
 
 import java.io.BufferedReader;
@@ -11,6 +12,7 @@ import java.io.InputStreamReader;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -23,17 +25,12 @@ public class CsvRecordReader {
     private static final S2WKTReader WKT_READER = new S2WKTReader();
 
     public static List<CsvRecord> readAllRecords(InputStream inputStream) {
-        List<CsvRecord> csvRecordList = new ArrayList<>();
-        try (
-                CsvRecordIterator iterator = getIterator(inputStream)
-        ) {
-            while (iterator.hasNext()) {
-                csvRecordList.add(iterator.next());
-            }
+        try (CsvRecordIterator iterator = getIterator(inputStream)) {
+            return Lists.newArrayList(iterator);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return csvRecordList;
+        return Collections.EMPTY_LIST;
     }
 
     public static CsvRecordIterator getIterator(InputStream inputStream) throws IOException {

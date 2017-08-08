@@ -113,13 +113,13 @@ public class UsageExample {
             
         }
         
-        public QueryResult query(Constrain constrain) {
+        public List<String> query(Constrain constrain) {
             loadInventories();
             
-            QueryResult result1 = zInventory.query(constrain);
-            QueryResult result2 = zInventory.query(constrain);
+            List<String> result1 = zInventory.query(constrain);
+            List<String> result2 = zInventory.query(constrain);
             
-            QueryResult mergedResult = null;
+            List<String> mergedResult = null;
             //merge result1 and result2
             return mergedResult;
         }
@@ -144,7 +144,7 @@ public class UsageExample {
             
         }
         
-        public QueryResult query(Constrain constrain) {
+        public List<String> query(Constrain constrain) {
             return null;
         }
     }

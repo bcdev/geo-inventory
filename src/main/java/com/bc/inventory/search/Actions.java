@@ -7,6 +7,7 @@ import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
+import java.util.List;
 
 public class Actions {
 
@@ -23,26 +24,27 @@ public class Actions {
     }
 
     public int updateIndex(String... filenames) throws IOException {
-        CompressedGeoDb compressedGeoDb = new CompressedGeoDb(maxLevel, useIndex);
+        GeoDb db = new CompressedGeoDb(maxLevel, useIndex);
         if (streamFactory.exists(indexFilename)) {
             ImageInputStream iis = streamFactory.createImageInputStream(indexFilename);
-            compressedGeoDb.open(iis);
+            db.open(iis);
         }
+        GeoDbUpdater dbUpdater = db.getDbUpdater();
         for (String csvFile : filenames) {
             ImageInputStream iis = streamFactory.createImageInputStream(csvFile);
             CsvGeoDb csvGeoDb = new CsvGeoDb();
             csvGeoDb.open(iis);
             Iterator<GeoDbEntry> entries = csvGeoDb.entries();
             while (entries.hasNext()) {
-                compressedGeoDb.addEntry(entries.next());
+                dbUpdater.addEntry(entries.next());
             }
         }
-        compressedGeoDb.close();
+        db.close();
         OutputStream os = streamFactory.createOutputStream(indexFilename);
-        return compressedGeoDb.write(os);
+        return dbUpdater.write(os);
     }
 
-    public QueryResult query(Constrain constrain) throws IOException {
+    public List<String> query(Constrain constrain) throws IOException {
         CompressedGeoDb compressedGeoDb = new CompressedGeoDb(maxLevel, useIndex);
         ImageInputStream iis = streamFactory.createImageInputStream(indexFilename);
         compressedGeoDb.open(iis);

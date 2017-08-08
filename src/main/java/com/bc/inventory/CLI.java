@@ -3,13 +3,10 @@ package com.bc.inventory;
 import com.bc.inventory.insitu.InsituRecords;
 import com.bc.inventory.search.Constrain;
 import com.bc.inventory.search.FileStreamFactory;
-import com.bc.inventory.search.QueryResult;
 import com.bc.inventory.search.StreamFactory;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Collection;
 
 /**
  * A command line interface to the geo inventory.

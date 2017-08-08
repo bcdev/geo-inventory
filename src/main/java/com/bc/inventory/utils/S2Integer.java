@@ -202,7 +202,7 @@ public class S2Integer {
 
         public final int[] intIds;
 
-        public Coverage(int[] intIds) {
+        public Coverage(int...intIds) {
             this.intIds = intIds;
         }
 
