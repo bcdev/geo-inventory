@@ -18,7 +18,7 @@ import java.util.List;
 public class SimpleFacade implements Facade {
 
     private static final DateFormat DATE_FORMAT = TimeUtils.createDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-    
+
     private final StreamFactory streamFactory;
     private final String indexFilename;
     private final int maxLevel;
@@ -42,24 +42,22 @@ public class SimpleFacade implements Facade {
             ImageInputStream iis = streamFactory.createImageInputStream(indexFilename);
             compressedGeoDb.open(iis);
         }
+
         GeoDbUpdater dbUpdater = compressedGeoDb.getDbUpdater();
-        for (String csvFile : filenames) {
-            ImageInputStream iis = streamFactory.createImageInputStream(csvFile);
-            CsvGeoDb csvGeoDb = new CsvGeoDb();
-            csvGeoDb.open(iis);
-            Iterator<GeoDbEntry> entries = csvGeoDb.entries();
-            while (entries.hasNext()) {
-                dbUpdater.addEntry(entries.next());
-            }
-        }
+        int addedProducts = updateFromCSV(dbUpdater, filenames, streamFactory);
         compressedGeoDb.close();
+
         OutputStream os = streamFactory.createOutputStream(indexFilename);
-        return dbUpdater.write(os);
+        dbUpdater.write(os);
+        return addedProducts;
     }
 
     @Override
     public List<String> query(Constrain constrain) throws IOException {
         CompressedGeoDb compressedGeoDb = new CompressedGeoDb(maxLevel, useIndex);
+        if (!streamFactory.exists(indexFilename)) {
+            throw new IllegalArgumentException("geo index does not exits:" + indexFilename);
+        }
         ImageInputStream iis = streamFactory.createImageInputStream(indexFilename);
         compressedGeoDb.open(iis);
         try {
@@ -72,20 +70,47 @@ public class SimpleFacade implements Facade {
     @Override
     public void dump(String csvFile) throws IOException {
         CompressedGeoDb compressedGeoDb = new CompressedGeoDb(maxLevel, useIndex);
+        if (!streamFactory.exists(indexFilename)) {
+            throw new IllegalArgumentException("geo index does not exits:" + indexFilename);
+        }
         ImageInputStream iis = streamFactory.createImageInputStream(indexFilename);
         compressedGeoDb.open(iis);
-        Iterator<GeoDbEntry> entries = compressedGeoDb.entries();
 
-        OutputStream os = streamFactory.createOutputStream(csvFile);
+        OutputStream os;
+        if (csvFile == null) {
+            os = System.out;
+        } else {
+            os = streamFactory.createOutputStream(csvFile);
+        }
         try (Writer csvWriter = new BufferedWriter(new OutputStreamWriter(os))) {
+            dumpEntries(compressedGeoDb.entries(), csvWriter);
+        }
+        compressedGeoDb.close();
+    }
+
+    static void dumpEntries(Iterator<GeoDbEntry> entries, Writer csvWriter) throws IOException {
+        while (entries.hasNext()) {
+            GeoDbEntry geoDbEntry = entries.next();
+            String path = geoDbEntry.getPath();
+            String startTime = DATE_FORMAT.format(TimeUtils.minuteTimeAsDate(geoDbEntry.getStartTime()));
+            String endTime = DATE_FORMAT.format(TimeUtils.minuteTimeAsDate(geoDbEntry.getEndTime()));
+            String wkt = S2WKTWriter.write(geoDbEntry.getPolygon());
+            csvWriter.write(String.format("%s\t%s\t%s\t%s%n", path, startTime, endTime, wkt));
+        }
+    }
+
+    static int updateFromCSV(GeoDbUpdater dbUpdater, String[] filenames, StreamFactory streamFactory) throws IOException {
+        int counter = 0;
+        for (String csvFile : filenames) {
+            ImageInputStream iis = streamFactory.createImageInputStream(csvFile);
+            CsvGeoDb csvGeoDb = new CsvGeoDb();
+            csvGeoDb.open(iis);
+            Iterator<GeoDbEntry> entries = csvGeoDb.entries();
             while (entries.hasNext()) {
-                GeoDbEntry geoDbEntry = entries.next();
-                String path = geoDbEntry.getPath();
-                String startTime = DATE_FORMAT.format(TimeUtils.minuteTimeAsDate(geoDbEntry.getStartTime()));
-                String endTime = DATE_FORMAT.format(TimeUtils.minuteTimeAsDate(geoDbEntry.getEndTime()));
-                String wkt = S2WKTWriter.write(geoDbEntry.getPolygon());
-                csvWriter.write(String.format("%s\t%s\t%s\t%s%n", path, startTime, endTime, wkt));
+                dbUpdater.addEntry(entries.next());
+                counter++;
             }
         }
+        return counter;
     }
 }

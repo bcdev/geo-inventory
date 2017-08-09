@@ -13,7 +13,7 @@ public class CsvRecordReaderTest {
 
     @Test
     public void testReadAllRecords() throws Exception {
-        InputStream is = CsvRecordReaderTest.class.getResourceAsStream("/meris20050101_products_list.csv");
+        InputStream is = this.getClass().getResourceAsStream("/meris20050101_products_list.csv");
         List<CsvRecord> csvRecords = CsvRecordReader.readAllRecords(is);
         assertNotNull(csvRecords);
         assertEquals(14, csvRecords.size());

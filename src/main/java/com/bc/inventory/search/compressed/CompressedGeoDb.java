@@ -63,7 +63,9 @@ public class CompressedGeoDb implements GeoDb {
 
     @Override
     public void close() throws IOException {
-        reader.close();
+        if (reader != null) {
+            reader.close();
+        }
     }
 
     @Override
@@ -164,12 +166,11 @@ public class CompressedGeoDb implements GeoDb {
         }
 
         @Override
-        public int write(OutputStream os) throws IOException {
+        public void write(OutputStream os) throws IOException {
             entries.sort(Comparator.comparingInt(r -> r.startTime));
             try (DbFile.Writer writer = new DbFile.Writer(os, useIndex)) {
                 writer.write(entries, coverageList);
             }
-            return entries.size();
         }
     }
 

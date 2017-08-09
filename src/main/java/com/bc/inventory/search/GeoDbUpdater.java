@@ -7,6 +7,6 @@ public interface GeoDbUpdater {
     
     void addEntry(GeoDbEntry entry) throws IOException;
 
-    int write(OutputStream os) throws IOException;
+    void write(OutputStream os) throws IOException;
     
 }

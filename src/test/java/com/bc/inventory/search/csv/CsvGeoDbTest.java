@@ -26,7 +26,7 @@ public class CsvGeoDbTest {
 
     @Before
     public void setUp() throws Exception {
-        InputStream is = CsvRecordReaderTest.class.getResourceAsStream("/meris20050101_products_list.csv");
+        InputStream is = this.getClass().getResourceAsStream("/meris20050101_products_list.csv");
         iis = new MemoryCacheImageInputStream(is);
         csvGeoDb = new CsvGeoDb();
         northsea = new Constrain.Builder("northsea").polygon(NORTHSEA_WKT).build();
