@@ -2,27 +2,28 @@ package com.bc.inventory;
 
 import com.bc.inventory.insitu.InsituRecords;
 import com.bc.inventory.search.Constrain;
+import com.bc.inventory.search.Facade;
 import com.bc.inventory.search.FileStreamFactory;
+import com.bc.inventory.search.SimpleFacade;
 import com.bc.inventory.search.StreamFactory;
+import com.bc.inventory.utils.SimpleRecord;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * A command line interface to the geo inventory.
  * The following options are supported:
  * <p>
- * create <DB-dir> <CSV-file>
- *   creates an DB from the given CSV file
+ * update <DB-dir> <CSV-path>
+ * creates or updates the DB from the given CSV file
  * <p>
- * update <DB-dir> <CSV-file>
- *   updates the DB from the given CSV file
- * <p>
- * dump <DB-dir> <CSV-file>
- *   writes the content of the DB to the CSV file
+ * dump <DB-dir> <CSV-path>
+ * writes the content of the DB to the CSV file
  * <p>
  * query <DB-dir> <constraints>
- *   queries the DB using the given constraints.
+ * queries the DB using the given constraints.
  */
 public class CLI {
 
@@ -35,62 +36,45 @@ public class CLI {
         }
         String mode = args[0].toLowerCase();
         String dbDIR = args[1];
-        StreamFactory streamFactory = new FileStreamFactory(new File(dbDIR));
+        Facade facade = createFascade(new FileStreamFactory(), dbDIR);
         switch (mode) {
-            case "create":
-                create(streamFactory, args[2]);
-                System.exit(0);
             case "update":
-                update(streamFactory, args[2]);
+                update(facade, args[2]);
                 System.exit(0);
             case "query":
-                query(streamFactory, args);
+                query(facade, args);
                 System.exit(0);
             case "dump":
-                dump(streamFactory, args[2]);
+                dump(facade, args[2]);
                 System.exit(0);
 
         }
         printUsage();
         System.exit(1);
     }
-
-    private static void create(StreamFactory streamFactory, String csvFile) throws IOException {
-//        BitmapInventory inventory = new BitmapInventory(streamFactory);
-//        inventory.createIndex(csvFile);
+    
+    private static Facade createFascade(StreamFactory streamFactory, String dbDIR) {
+        return new SimpleFacade(streamFactory, new File(dbDIR, "geo_index").getPath());
     }
 
-    private static void dump(StreamFactory streamFactory, String csvFile) throws IOException {
-//        BitmapInventory inventory = new BitmapInventory(streamFactory);
-//        inventory.loadIndex();
-//        inventory.dumpDB(csvFile);
+    private static void dump(Facade facade, String csvPath) throws IOException {
+        facade.dump(csvPath);
     }
 
-    private static void update(StreamFactory streamFactory, String csvFile) throws IOException {
-//        BitmapInventory inventory = new BitmapInventory(streamFactory);
-//        inventory.updateIndex(csvFile);
+    private static void update(Facade facade, String csvPath) throws IOException {
+        facade.updateIndex(csvPath);
     }
 
-    private static void query(StreamFactory streamFactory, String[] args) throws IOException {
-//        BitmapInventory inventory = new BitmapInventory(streamFactory);
-//        int numEntries = inventory.loadIndex();
-//        System.out.println("numEntries in geoDB= " + numEntries);
-//        Constrain constraints = parseConstraint(args);
-//        System.out.println("Constraints = " + constraints);
-//        long t1 = System.currentTimeMillis();
-//        QueryResult queryResult = inventory.query(constraints);
-//        long t2 = System.currentTimeMillis();
-//        Collection<String> paths = queryResult.getPaths();
-//        final String outputFilename = "geoDB_query_result.txt";
-//        System.out.printf("Time needed: %dms%n", (t2-t1));
-//        System.out.printf("Num results: %d%n", paths.size());
-//        try(FileWriter fw = new FileWriter(outputFilename)) {
-//            for (String path : paths) {
-//                fw.append(path).append('\n');
-//            }
-//        }
-//        System.out.println();
-//        System.out.printf("Query result written to file: '%s'%n", outputFilename);
+    private static void query(Facade facade, String[] args) throws IOException {
+        Constrain constraints = parseConstraint(args);
+        long t1 = System.currentTimeMillis();
+        List<String> pathList = facade.query(constraints);
+        long t2 = System.currentTimeMillis();
+        System.err.printf("Time needed: %dms%n", (t2 - t1));
+        System.err.printf("Num results: %d%n", pathList.size());
+        for (String path : pathList) {
+            System.err.println(path);
+        }
     }
 
     private static Constrain parseConstraint(String[] args) throws IOException {
@@ -109,7 +93,7 @@ public class CLI {
                     cb.polygon(value);
                     break;
                 case "insitu":
-                    cb.insitu(InsituRecords.read(new File(value)));
+                    cb.insitu(InsituRecords.read(new File(value), SimpleRecord.INSITU_DATE_FORMAT));
                     cb.timeDelta(HOURS_IN_MILLIS * 3);
                     cb.useOnlyProductStartDate(false);
                     break;
@@ -125,11 +109,9 @@ public class CLI {
     private static void printUsage() {
         System.out.println("geo-inventiory [create|update|query] <DB-dir> ...");
         System.out.println("");
-        System.out.println("create <DB-dir> <CSV-file>");
-        System.out.println("     creates an DB from the given CSV file");
-        System.out.println("update <DB-dir> <CSV-file>");
+        System.out.println("update <DB-dir> <CSV-path>");
         System.out.println("    updates the DB from the given CSV file");
-        System.out.println("dump <DB-dir> <CSV-file>");
+        System.out.println("dump <DB-dir> <CSV-path>");
         System.out.println("    writes the content of the DB to the CSV file");
         System.out.println("query <DB-dir> <constraints>");
         System.out.println("     queries the DB using the given constraints:");

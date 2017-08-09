@@ -27,7 +27,7 @@ import java.util.TimeZone;
 
 public class TimeUtils {
 
-    private static final double MINUTES_PER_MILLI = 60.0 * 1000;
+    private static final int MINUTES_PER_MILLI = 60 * 1000;
     private static final TimeZone UTC_TIME_ZONE = TimeZone.getTimeZone("UTC");
 
     public static Date parse(String text, String pattern) throws ParseException {
@@ -63,13 +63,17 @@ public class TimeUtils {
         if (startTime == -1) {
             return -1;
         }
-        return (int) Math.floor(startTime / MINUTES_PER_MILLI);
+        return (int) Math.floor((double)startTime / (double)MINUTES_PER_MILLI);
     }
 
     public static int endTimeInMin(long endTime) {
         if (endTime == -1) {
             return -1;
         }
-        return (int) Math.ceil(endTime / MINUTES_PER_MILLI);
+        return (int) Math.ceil((double)endTime / (double)MINUTES_PER_MILLI);
+    }
+    
+    public static Date minuteTimeAsDate(int minuteTime) {
+        return new Date((long)minuteTime * (long)MINUTES_PER_MILLI);
     }
 }

@@ -14,26 +14,20 @@ import java.io.OutputStream;
  */
 public class FileStreamFactory implements StreamFactory {
 
-    private final File baseDir;
 
-    public FileStreamFactory(File baseDir) {
-        this.baseDir = baseDir;
-        this.baseDir.mkdirs();
+    @Override
+    public InputStream createInputStream(String path) throws IOException {
+        return new FileInputStream(new File(path));
     }
 
     @Override
-    public InputStream createInputStream(String name) throws IOException {
-        return new FileInputStream(new File(baseDir, name));
+    public ImageInputStream createImageInputStream(String path) throws IOException {
+        return new FileImageInputStream(new File(path));
     }
 
     @Override
-    public ImageInputStream createImageInputStream(String name) throws IOException {
-        return new FileImageInputStream(new File(baseDir, name));
-    }
-
-    @Override
-    public OutputStream createOutputStream(String name) throws IOException {
-        File file = new File(baseDir, name);
+    public OutputStream createOutputStream(String path) throws IOException {
+        File file = new File(path);
         File parentFile = file.getParentFile();
         if (!parentFile.exists()) {
             parentFile.mkdirs();
@@ -42,7 +36,7 @@ public class FileStreamFactory implements StreamFactory {
     }
 
     @Override
-    public boolean exists(String name) {
-        return new File(baseDir, name).exists();
+    public boolean exists(String path) {
+        return new File(path).exists();
     }
 }

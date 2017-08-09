@@ -53,32 +53,32 @@ public class Benchmark {
 
     private static void measureGeoDB(MeasurementTable mt, String sensor, int maxLevel, boolean useIndex) throws IOException {
         String label = sensor + "_l" + maxLevel + "_" + Boolean.toString(useIndex);
-        String productListFilename = sensor + "_products_list.csv";
-        StreamFactory streamFactory = new FileStreamFactory(baseDir);
+        String productListFilename = baseDir.getPath() + "/" + sensor + "_products_list.csv";
+        StreamFactory streamFactory = new FileStreamFactory();
 
-        String indexFilename = "GEO" + "/data_" + sensor + "_level" + Integer.toString(maxLevel);
+        String indexFilename = baseDir.getPath() + "/GEO/data_" + sensor + "_level" + Integer.toString(maxLevel);
         if (useIndex) {
-            indexFilename = "GEO" + "/index_" + sensor + "_level" + Integer.toString(maxLevel);
+            indexFilename = baseDir.getPath() + "/GEO/index_" + sensor + "_level" + Integer.toString(maxLevel);
         }
-        Fascade fascade = new SimpleFascade(streamFactory, indexFilename, maxLevel, useIndex);
+        Facade facade = new SimpleFacade(streamFactory, indexFilename, maxLevel, useIndex);
 
         if (!streamFactory.exists(indexFilename)) {
             try (Measurement m = new Measurement("create/update DB", label, mt)) {
-                m.setNumProducts(fascade.updateIndex(productListFilename));
+                m.setNumProducts(facade.updateIndex(productListFilename));
             }
         }
 
         for (Constrain constrain : constrains) {
             try (Measurement m = new Measurement(constrain.getQueryName(), label, mt)) {
-                List<String> queryResult = fascade.query(constrain);
+                List<String> queryResult = facade.query(constrain);
                 m.setNumProducts(queryResult.size());
             }
         }
     }
 
     private static List<Constrain> createConstrains() throws Exception {
-        List<SimpleRecord> latLonTime = InsituRecords.read(new File(baseDir, "insitu.csv"));
-        List<SimpleRecord> latLon = InsituRecords.read(new File(baseDir, "extracts.csv"));
+        List<SimpleRecord> latLonTime = InsituRecords.read(new File(baseDir, "insitu.csv"), SimpleRecord.INSITU_DATE_FORMAT);
+        List<SimpleRecord> latLon = InsituRecords.read(new File(baseDir, "extracts.csv"), SimpleRecord.INSITU_DATE_FORMAT);
 
         List<Constrain.Builder> cbs = new ArrayList<>();
 //        cbs.add(new Constrain.Builder("northsea").polygon(NORTHSEA_WKT));

@@ -1,13 +1,10 @@
 package com.bc.inventory.search;
 
 import com.bc.geometry.s2.S2WKTReader;
-import com.bc.inventory.utils.S2Integer;
 import com.google.common.geometry.S2CellId;
 import com.google.common.geometry.S2CellUnion;
 import com.google.common.geometry.S2Polygon;
 import com.google.common.geometry.S2RegionCoverer;
-import me.lemire.integercompression.differential.IntegratedIntCompressor;
-import org.roaringbitmap.RoaringBitmap;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,11 +32,11 @@ public class CompareStorageSizesMain {
     static void test(String sensor, S2Polygon s2Polygon) throws IOException {
         System.out.println("sensor     = " + sensor);
         double area = s2Polygon.getArea();
-        System.out.printf("area       = %.4f%%%n", (area / (4 * Math.PI))*100);
+        System.out.printf("area       = %.4f%%%n", (area / (4 * Math.PI)) * 100);
         int lastCovLength = -1;
         System.out.println();
-        System.out.println("level || extCov/area |   cov  | de.cov |   rb    |  PFOR  || intCov/area |   cov  | de.cov |   rb    |  PFOR  |");
-        System.out.println("------||-------------|--------|--------|---------|--------||-------------|--------|--------|---------|--------|");
+        System.out.println("level || extCov/area |   cov  | de.cov || intCov/area |   cov  | de.cov |");
+        System.out.println("------||-------------|--------|--------||-------------|--------|--------|");
 
         for (int maxLevel = 0; maxLevel < 20; maxLevel++) {
             S2RegionCoverer coverer = new S2RegionCoverer();
@@ -58,12 +55,10 @@ public class CompareStorageSizesMain {
             }
             CoveragStat iStat = CoveragStat.create(coverer.getInteriorCovering(s2Polygon), maxLevel);
 
-            String format = "   %2d ||  %9.4f  | %6d | %6d | %7d | %6d ||  %9.7f  | %6d | %6d | %7d | %6d |";
-            int eBytes = eStat.roaringBitmap.serializedSizeInBytes();
-            int iBytes = iStat.roaringBitmap.serializedSizeInBytes();
+            String format = "   %2d ||  %9.4f  | %6d | %6d ||  %9.7f  | %6d | %6d |";
             System.out.printf(format, maxLevel,
-                    eRatio, eStat.covSize*4, eStat.deNormCovSize*4, eBytes, eStat.compressed.length*4,
-                    iStat.area / area, iStat.covSize*4, iStat.deNormCovSize*4, iBytes, iStat.compressed.length*4
+                              eRatio, eStat.covSize * 4, eStat.deNormCovSize * 4,
+                              iStat.area / area, iStat.covSize * 4, iStat.deNormCovSize * 4
             );
             System.out.println();
         }
@@ -74,43 +69,22 @@ public class CompareStorageSizesMain {
         final double area;
         final int covSize;
         final int deNormCovSize;
-        final RoaringBitmap roaringBitmap;
-        final int[] compressed;
 
-        public CoveragStat(double area, int covSize, int deNormCovSize, RoaringBitmap roaringBitmap, int[] compressed) {
+        public CoveragStat(double area, int covSize, int deNormCovSize) {
             this.area = area;
             this.covSize = covSize;
             this.deNormCovSize = deNormCovSize;
-            this.roaringBitmap = roaringBitmap;
-            this.compressed = compressed;
         }
 
         public static CoveragStat create(S2CellUnion cov, int maxLevel) {
             double covArea = cov.exactArea();
-
-
             ArrayList<S2CellId> deCov = new ArrayList<>();
             cov.denormalize(maxLevel, 1, deCov);
-
-            RoaringBitmap roaringBitmap = new RoaringBitmap();
-            for (S2CellId s2CellId : deCov) {
-                roaringBitmap.add(S2Integer.asIntAtLevel(s2CellId, maxLevel));
-            }
-            roaringBitmap.runOptimize();
-
-            IntegratedIntCompressor iic = new IntegratedIntCompressor();
-            int[] data = new int[cov.size()];
-            for (int i = 0; i < cov.size(); i++) {
-                 data[i] = asIntAtLevel(cov.cellId(i), maxLevel);
-            }
-            int[] compressed = iic.compress(data);
-            //System.out.println("maxLevel = " + maxLevel+ "  compressed.length = " + compressed.length);
-            //System.out.println("maxLevel = " + maxLevel+ "  roaringBitmap = " + roaringBitmap);
-            return new CoveragStat(covArea, cov.size(), deCov.size(), roaringBitmap, compressed);
+            return new CoveragStat(covArea, cov.size(), deCov.size());
         }
 
         public static int asIntAtLevel(S2CellId s2CellId, int level) {
-            return (int) (s2CellId.id() >>> (64 - 3 - (2*level)));
+            return (int) (s2CellId.id() >>> (64 - 3 - (2 * level)));
         }
 
     }

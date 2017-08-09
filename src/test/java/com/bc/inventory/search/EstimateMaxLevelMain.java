@@ -1,11 +1,10 @@
-package com.bc.inventory;
+package com.bc.inventory.search;
 
 import com.bc.inventory.search.csv.CsvRecord;
 import com.bc.inventory.search.csv.CsvRecordReader;
 import com.bc.inventory.utils.S2Integer;
 import com.google.common.geometry.S2CellUnion;
 import com.google.common.geometry.S2Polygon;
-import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,7 +14,7 @@ import java.io.InputStream;
 /**
  * Tests which maxLevel is good
  */
-public class EstimateMaxLevel {
+public class EstimateMaxLevelMain {
 
     // 15 is maxLevel to be encoded as an INTEGER
     private static final int MAX_LEVEL = 15;
@@ -54,14 +53,12 @@ public class EstimateMaxLevel {
 
     private static void handle(S2Polygon s2Polygon, Stats stats) {
         double polygonArea = s2Polygon.getArea();
-//        int level = 5;
         for (int level = 1; level < MAX_LEVEL; level++) {
             S2CellUnion cellUnion = S2Integer.createCellUnion(s2Polygon, level);
             double coverageArea = cellUnion.exactArea();
 //            System.out.printf("coverageArea = %.6f  polygonArea = %.6f  ratio = %10.3f%n", coverageArea, polygonArea, coverageArea / polygonArea);
-            ImmutableRoaringBitmap bitmap = S2Integer.createCoverageBitmap(cellUnion, level);
             double ratio = coverageArea / polygonArea;
-            stats.add(level, ratio, bitmap.serializedSizeInBytes());
+            stats.add(level, ratio, cellUnion.cellIds().size() * 4);
             if (ratio < 1.2) {
                 break;
             }
@@ -90,7 +87,7 @@ public class EstimateMaxLevel {
         public String toString() {
             StringBuilder sb = new StringBuilder();
             for (int level = 1; level < MAX_LEVEL; level++) {
-                if (stats1[level].count>0) {
+                if (stats1[level].count > 0) {
                     String s1 = stats1[level].toString();
                     String s2 = stats2[level].toString();
                     sb.append(String.format("level %2d   %s  %s%n", level, s1, s2));
