@@ -15,7 +15,7 @@ import java.text.DateFormat;
 import java.util.Iterator;
 import java.util.List;
 
-public class SimpleFacade implements Facade {
+public class SimpleInventory implements Inventory {
 
     private static final DateFormat DATE_FORMAT = TimeUtils.createDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
@@ -24,11 +24,11 @@ public class SimpleFacade implements Facade {
     private final int maxLevel;
     private final boolean useIndex;
 
-    public SimpleFacade(StreamFactory streamFactory, String indexPath) {
+    public SimpleInventory(StreamFactory streamFactory, String indexPath) {
         this(streamFactory, indexPath, 4, true);
     }
 
-    public SimpleFacade(StreamFactory streamFactory, String indexPath, int maxLevel, boolean useIndex) {
+    public SimpleInventory(StreamFactory streamFactory, String indexPath, int maxLevel, boolean useIndex) {
         this.streamFactory = streamFactory;
         this.indexFilename = indexPath;
         this.maxLevel = maxLevel;

@@ -1,24 +1,22 @@
 package com.bc.inventory.search;
 
-import com.bc.inventory.search.csv.CsvRecordReaderTest;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class SafeUpdateFacadeTest {
+public class SafeUpdateInventoryTest {
 
     @Test
     public void test_empty() throws Exception {
         FileStreamFactory fileStreamFactory = new FileStreamFactory();
         Path tmpDir = Files.createTempDirectory("SafeUpdateFacadeTest");
-        SafeUpdateFacade facade = new SafeUpdateFacade(fileStreamFactory, tmpDir.toString());
+        SafeUpdateInventory facade = new SafeUpdateInventory(fileStreamFactory, tmpDir.toString());
         Path dumpCSV = tmpDir.resolve("dump1");
         facade.dump(dumpCSV.toString());
         assertTrue(Files.exists(dumpCSV));
@@ -30,7 +28,7 @@ public class SafeUpdateFacadeTest {
     public void test_create() throws Exception {
         FileStreamFactory fileStreamFactory = new FileStreamFactory();
         Path tmpDir = Files.createTempDirectory("SafeUpdateFacadeTest");
-        SafeUpdateFacade facade = new SafeUpdateFacade(fileStreamFactory, tmpDir.toString());
+        SafeUpdateInventory facade = new SafeUpdateInventory(fileStreamFactory, tmpDir.toString());
         Path csv1 = copyResource(tmpDir, "/meris20050101_products_list.csv", "CSV_1");
 
         Path geoIndexA = tmpDir.resolve("geo_index.a");
@@ -50,7 +48,7 @@ public class SafeUpdateFacadeTest {
     public void test_updates() throws Exception {
         FileStreamFactory fileStreamFactory = new FileStreamFactory();
         Path tmpDir = Files.createTempDirectory("SafeUpdateFacadeTest");
-        SafeUpdateFacade facade = new SafeUpdateFacade(fileStreamFactory, tmpDir.toString());
+        SafeUpdateInventory facade = new SafeUpdateInventory(fileStreamFactory, tmpDir.toString());
         Path csv1 = copyResource(tmpDir, "/meris20050101_products_list.csv", "meris20050101");
         Path csv2 = copyResource(tmpDir, "/meris20050102_products_list.csv", "meris20050102");
         Path csv3 = copyResource(tmpDir, "/meris20050103_products_list.csv", "meris20050103");
@@ -98,7 +96,7 @@ public class SafeUpdateFacadeTest {
     public void test_query() throws Exception {
         FileStreamFactory fileStreamFactory = new FileStreamFactory();
         Path tmpDir = Files.createTempDirectory("SafeUpdateFacadeTest");
-        SafeUpdateFacade facade = new SafeUpdateFacade(fileStreamFactory, tmpDir.toString());
+        SafeUpdateInventory facade = new SafeUpdateInventory(fileStreamFactory, tmpDir.toString());
         Path csv1 = copyResource(tmpDir, "/meris20050101_products_list.csv", "CSV_20050101");
         Path csv2 = copyResource(tmpDir, "/meris20050102_products_list.csv", "CSV_20050102");
         Path csv3 = copyResource(tmpDir, "/meris20050103_products_list.csv", "CSV_20050103");
@@ -111,7 +109,7 @@ public class SafeUpdateFacadeTest {
     public void test_update_then_query() throws Exception {
         FileStreamFactory fileStreamFactory = new FileStreamFactory();
         Path tmpDir = Files.createTempDirectory("SafeUpdateFacadeTest");
-        SafeUpdateFacade facade = new SafeUpdateFacade(fileStreamFactory, tmpDir.toString());
+        SafeUpdateInventory facade = new SafeUpdateInventory(fileStreamFactory, tmpDir.toString());
         Constrain constrain = new Constrain.Builder("").build();
         
         Path csv1 = copyResource(tmpDir, "/meris20050101_products_list.csv", "CSV_20050101");
@@ -125,7 +123,6 @@ public class SafeUpdateFacadeTest {
         
         result = facade.query(constrain);
         assertEquals(45, result.size());
-        
     }
     
     private Path copyResource(Path destDir, String resourceName, String targetName) throws IOException {

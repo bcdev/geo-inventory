@@ -17,7 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class SafeUpdateFacade implements Facade {
+public class SafeUpdateInventory implements Inventory {
     
     private static final DateFormat ATTIC_DATE_FORMAT = TimeUtils.createDateFormat("yyyyMMdd_HHmmss_SSS");
 
@@ -29,11 +29,11 @@ public class SafeUpdateFacade implements Facade {
     private final int maxLevel;
     private final boolean useIndex;
 
-    public SafeUpdateFacade(StreamFactory streamFactory, String dbDir) {
+    public SafeUpdateInventory(StreamFactory streamFactory, String dbDir) {
         this(streamFactory, dbDir, 4, true);
     }
 
-    public SafeUpdateFacade(StreamFactory streamFactory, String dbDir, int maxLevel, boolean useIndex) {
+    public SafeUpdateInventory(StreamFactory streamFactory, String dbDir, int maxLevel, boolean useIndex) {
         this.streamFactory = streamFactory;
         this.dbDir = dbDir;
         this.indexFilenameA = dbDir + "/geo_index.a";
@@ -54,7 +54,7 @@ public class SafeUpdateFacade implements Facade {
             compressedGeoDb.open(iis);
         }
         GeoDbUpdater dbUpdater = compressedGeoDb.getDbUpdater();
-        int addedProducts = SimpleFacade.updateFromCSV(dbUpdater, filenames, streamFactory);
+        int addedProducts = SimpleInventory.updateFromCSV(dbUpdater, filenames, streamFactory);
         compressedGeoDb.close();
 
         if (streamFactory.exists(indexFilenameNew)) {
@@ -118,10 +118,12 @@ public class SafeUpdateFacade implements Facade {
     @Override
     public void dump(String csvFile) throws IOException {
         OutputStream os;
+        boolean closeOS = false;
         if (csvFile == null) {
             os = System.out;
         } else {
             os = streamFactory.createOutputStream(csvFile);
+            closeOS = true;
         }
         try (Writer csvWriter = new BufferedWriter(new OutputStreamWriter(os))) {
             // list ".a" and ".b" sort by age
@@ -131,7 +133,7 @@ public class SafeUpdateFacade implements Facade {
                 ImageInputStream iis = streamFactory.createImageInputStream(indexFiles[0]);
                 GeoDb compressedGeoDb = new CompressedGeoDb(maxLevel, useIndex);
                 compressedGeoDb.open(iis);
-                SimpleFacade.dumpEntries(compressedGeoDb.entries(), csvWriter);
+                SimpleInventory.dumpEntries(compressedGeoDb.entries(), csvWriter);
                 compressedGeoDb.close();
             }
             String[] csvFiles = streamFactory.listWithPrefix(dbDir, "CSV");
@@ -140,7 +142,11 @@ public class SafeUpdateFacade implements Facade {
                 ImageInputStream iis = streamFactory.createImageInputStream(csvFilePath);
                 CsvGeoDb csvGeoDb = new CsvGeoDb();
                 csvGeoDb.open(iis);
-                SimpleFacade.dumpEntries(csvGeoDb.entries(), csvWriter);
+                SimpleInventory.dumpEntries(csvGeoDb.entries(), csvWriter);
+            }
+        } finally {
+            if (closeOS) {
+                os.close();
             }
         }
     }

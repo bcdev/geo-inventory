@@ -2,9 +2,9 @@ package com.bc.inventory;
 
 import com.bc.inventory.insitu.InsituRecords;
 import com.bc.inventory.search.Constrain;
-import com.bc.inventory.search.Facade;
+import com.bc.inventory.search.Inventory;
 import com.bc.inventory.search.FileStreamFactory;
-import com.bc.inventory.search.SimpleFacade;
+import com.bc.inventory.search.SimpleInventory;
 import com.bc.inventory.search.StreamFactory;
 import com.bc.inventory.utils.SimpleRecord;
 
@@ -36,16 +36,16 @@ public class CLI {
         }
         String mode = args[0].toLowerCase();
         String dbDIR = args[1];
-        Facade facade = createFascade(new FileStreamFactory(), dbDIR);
+        Inventory inventory = createInventory(new FileStreamFactory(), dbDIR);
         switch (mode) {
             case "update":
-                update(facade, args[2]);
+                update(inventory, args[2]);
                 System.exit(0);
             case "query":
-                query(facade, args);
+                query(inventory, args);
                 System.exit(0);
             case "dump":
-                dump(facade, args[2]);
+                dump(inventory, args[2]);
                 System.exit(0);
 
         }
@@ -53,22 +53,22 @@ public class CLI {
         System.exit(1);
     }
     
-    private static Facade createFascade(StreamFactory streamFactory, String dbDIR) {
-        return new SimpleFacade(streamFactory, new File(dbDIR, "geo_index").getPath());
+    private static Inventory createInventory(StreamFactory streamFactory, String dbDIR) {
+        return new SimpleInventory(streamFactory, new File(dbDIR, "geo_index").getPath());
     }
 
-    private static void dump(Facade facade, String csvPath) throws IOException {
-        facade.dump(csvPath);
+    private static void dump(Inventory inventory, String csvPath) throws IOException {
+        inventory.dump(csvPath);
     }
 
-    private static void update(Facade facade, String csvPath) throws IOException {
-        facade.updateIndex(csvPath);
+    private static void update(Inventory inventory, String csvPath) throws IOException {
+        inventory.updateIndex(csvPath);
     }
 
-    private static void query(Facade facade, String[] args) throws IOException {
+    private static void query(Inventory inventory, String[] args) throws IOException {
         Constrain constraints = parseConstraint(args);
         long t1 = System.currentTimeMillis();
-        List<String> pathList = facade.query(constraints);
+        List<String> pathList = inventory.query(constraints);
         long t2 = System.currentTimeMillis();
         System.err.printf("Time needed: %dms%n", (t2 - t1));
         System.err.printf("Num results: %d%n", pathList.size());
