@@ -100,9 +100,9 @@ public class SafeUpdateInventoryTest {
         FileStreamFactory fileStreamFactory = new FileStreamFactory();
         Path tmpDir = Files.createTempDirectory("SafeUpdateFacadeTest");
         SafeUpdateInventory facade = new SafeUpdateInventory(fileStreamFactory, tmpDir.toString());
-        Path csv1 = copyResource(tmpDir, "/meris20050101_products_list.csv", "CSV_20050101");
-        Path csv2 = copyResource(tmpDir, "/meris20050102_products_list.csv", "CSV_20050102");
-        Path csv3 = copyResource(tmpDir, "/meris20050103_products_list.csv", "CSV_20050103");
+        copyResource(tmpDir, "/meris20050101_products_list.csv", "CSV_20050101");
+        copyResource(tmpDir, "/meris20050102_products_list.csv", "CSV_20050102");
+        copyResource(tmpDir, "/meris20050103_products_list.csv", "CSV_20050103");
 
         List<String> result = facade.query(new Constrain.Builder("").build());
         assertEquals(45, result.size());
@@ -121,8 +121,8 @@ public class SafeUpdateInventoryTest {
         List<String> result = facade.query(constrain);
         assertEquals(14, result.size());
         
-        Path csv2 = copyResource(tmpDir, "/meris20050102_products_list.csv", "CSV_20050102");
-        Path csv3 = copyResource(tmpDir, "/meris20050103_products_list.csv", "CSV_20050103");
+        copyResource(tmpDir, "/meris20050102_products_list.csv", "CSV_20050102");
+        copyResource(tmpDir, "/meris20050103_products_list.csv", "CSV_20050103");
         
         result = facade.query(constrain);
         assertEquals(45, result.size());

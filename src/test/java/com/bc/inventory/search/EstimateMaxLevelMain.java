@@ -78,7 +78,7 @@ public class EstimateMaxLevelMain {
             }
         }
 
-        public void add(int level, double value1, double value2) {
+        void add(int level, double value1, double value2) {
             stats1[level].add(value1);
             stats2[level].add(value2);
         }
