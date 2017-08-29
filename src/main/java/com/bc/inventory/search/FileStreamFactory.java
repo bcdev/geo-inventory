@@ -4,7 +4,6 @@ import javax.imageio.stream.FileImageInputStream;
 import javax.imageio.stream.ImageInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -38,7 +37,7 @@ public class FileStreamFactory implements StreamFactory {
     }
 
     @Override
-    public String[] listByAge(String... filenames) throws IOException {
+    public String[] listNewestFirst(String... filenames) throws IOException {
         List<File> existingFiles = new ArrayList<>();
         for (String filename : filenames) {
             File file = new File(filename);
@@ -78,7 +77,7 @@ public class FileStreamFactory implements StreamFactory {
 
     @Override
     public void concat(String[] sourceFilenames, String destFilename) throws IOException {
-        try(OutputStream os = createOutputStream(destFilename)) {
+        try (OutputStream os = createOutputStream(destFilename)) {
             for (String sourceFilename : sourceFilenames) {
                 Files.copy(new File(sourceFilename).toPath(), os);
             }

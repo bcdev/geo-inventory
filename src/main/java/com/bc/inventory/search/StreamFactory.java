@@ -2,7 +2,6 @@ package com.bc.inventory.search;
 
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
@@ -16,14 +15,7 @@ public interface StreamFactory {
 
     boolean exists(String path) throws IOException;
 
-    /**
-     * newest Files last
-     * 
-     * @param filenames
-     * @return
-     * @throws IOException
-     */
-    String[] listByAge(String...filenames) throws IOException;
+    String[] listNewestFirst(String...filenames) throws IOException;
 
     void rename(String oldName, String newName) throws IOException;
 

@@ -16,11 +16,14 @@ public class SafeUpdateInventoryTest {
     public void test_empty() throws Exception {
         FileStreamFactory fileStreamFactory = new FileStreamFactory();
         Path tmpDir = Files.createTempDirectory("SafeUpdateFacadeTest");
-        SafeUpdateInventory facade = new SafeUpdateInventory(fileStreamFactory, tmpDir.toString());
+        SafeUpdateInventory inventory = new SafeUpdateInventory(fileStreamFactory, tmpDir.toString());
         Path dumpCSV = tmpDir.resolve("dump1");
-        facade.dump(dumpCSV.toString());
+        inventory.dump(dumpCSV.toString());
         assertTrue(Files.exists(dumpCSV));
         assertEquals(0, Files.size(dumpCSV));
+
+        List<String> result = inventory.query(new Constrain.Builder().build());
+        assertEquals(0, result.size());
     }
     
     
