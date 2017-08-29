@@ -63,7 +63,7 @@ public class SafeUpdateInventoryTest {
         // 1
         int count1 = facade.updateIndex(csv1.toString());
         assertEquals(14, count1);
-
+        // writes a
         assertTrue(Files.exists(geoIndexA));
         assertFalse(Files.exists(geoIndexB));
         assertFalse(Files.exists(geoIndexNew));
@@ -74,7 +74,7 @@ public class SafeUpdateInventoryTest {
         // 2
         int count2 = facade.updateIndex(csv2.toString());
         assertEquals(16, count2);
-
+        // writes b
         assertTrue(Files.exists(geoIndexA));
         assertTrue(Files.exists(geoIndexB));
         assertFalse(Files.exists(geoIndexNew));
@@ -86,11 +86,11 @@ public class SafeUpdateInventoryTest {
         // 3
         int count3 = facade.updateIndex(csv3.toString());
         assertEquals(15, count3);
-
+        // writes a
         assertTrue(Files.exists(geoIndexA));
         assertTrue(Files.exists(geoIndexB));
         assertFalse(Files.exists(geoIndexNew));
-        assertEquals(82929, Files.size(geoIndexA));
+        assertEquals(125213, Files.size(geoIndexA));
         assertEquals(82315, Files.size(geoIndexB));
         assertEquals(3, Files.list(tmpDir.resolve("attic")).count());
     }

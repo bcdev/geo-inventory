@@ -12,6 +12,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -30,7 +31,8 @@ public class SafeUpdateInventory implements Inventory {
     private final String indexFilenameNew;
     private final int maxLevel;
     private final boolean useIndex;
-    private final String prefix;
+    private String prefix;
+    private boolean verbose;
 
     public SafeUpdateInventory(StreamFactory streamFactory, String dbDir) {
         this(streamFactory, dbDir, 4, true);
@@ -45,17 +47,33 @@ public class SafeUpdateInventory implements Inventory {
         this.maxLevel = maxLevel;
         this.useIndex = useIndex;
         this.prefix = "CSV";
+        this.verbose = false;
+    }
+
+    public void setPrefix(String prefix) {
+        this.prefix = prefix;
+    }
+
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
     }
 
     @Override
     public int updateIndex(String... filenames) throws IOException {
-        String[] indexFiles = streamFactory.listNewestFirst(indexFilenameA, indexFilenameB);
-        GeoDb compressedDb = openCompressedDB(indexFiles).orElseGet(()-> new CompressedGeoDb(maxLevel, useIndex));
-        GeoDbUpdater dBUpdater = compressedDb.getDbUpdater();
         if (filenames.length == 0) {
             filenames = listIncrementalFiles();
         }
+        if (filenames.length == 0) {
+            printVerbose("updateIndex: no update files available");
+        } else {
+            printVerbose("updateIndex: update with " + Arrays.toString(filenames));
+        }
+        String[] indexFiles = streamFactory.listNewestFirst(indexFilenameA, indexFilenameB);
+        GeoDb compressedDb = openCompressedDB(indexFiles).orElseGet(() -> new CompressedGeoDb(maxLevel, useIndex));
+        GeoDbUpdater dBUpdater = compressedDb.getDbUpdater();
+        
         int addedProducts = SimpleInventory.updateFromCSV(dBUpdater, filenames, streamFactory);
+        printVerbose(String.format("updateIndex: added %s products, new size %s", addedProducts, compressedDb.size()));
         compressedDb.close();
 
         if (streamFactory.exists(indexFilenameNew)) {
@@ -63,6 +81,7 @@ public class SafeUpdateInventory implements Inventory {
         }
 
         try (OutputStream os = streamFactory.createOutputStream(indexFilenameNew)) {
+            printVerbose("updateIndex: writing compressed DB to " + indexFilenameNew);
             dBUpdater.write(os);
         }
 
@@ -77,13 +96,17 @@ public class SafeUpdateInventory implements Inventory {
                 olderDbName = indexFilenameA;
             }
         } else if (indexFiles.length == 2) {
-            olderDbName = indexFiles[0];
+            olderDbName = indexFiles[1];
         }
+        printVerbose(String.format("updateIndex: renaming  (%s) -> (%s)", indexFilenameNew, olderDbName));
         // rename ".new" to older name
         streamFactory.rename(indexFilenameNew, olderDbName);
 
-        streamFactory.concat(filenames, dbDir + "/attic/" + ATTIC_DATE_FORMAT.format(new Date(System.currentTimeMillis())) + ".csv");
+        String atticFilename = "/attic/" + ATTIC_DATE_FORMAT.format(new Date(System.currentTimeMillis())) + ".csv";
+        streamFactory.concat(filenames, dbDir + atticFilename);
+        printVerbose("updateIndex: creating archive " + atticFilename);
         for (String filename : filenames) {
+            printVerbose("updateIndex: deleting " + filename);
             streamFactory.delete(filename);
         }
         return addedProducts;
@@ -91,15 +114,18 @@ public class SafeUpdateInventory implements Inventory {
 
     @Override
     public List<String> query(Constrain constrain) throws IOException {
+        printVerbose("query: constrain " + constrain);
         List<GeoDb> dbList = new ArrayList<>();
-
         openCompressedDB().ifPresent(dbList::add);
-        Collections.addAll(dbList, openIncrementalUpdateDB());
+        Collections.addAll(dbList, openUpdateDBs());
 
         Set<String> resultSet = new HashSet<>();
         try {
-            for (GeoDb geoDb : dbList) {
-                resultSet.addAll(geoDb.query(constrain));
+            for (int i = 0; i < dbList.size(); i++) {
+                GeoDb geoDb = dbList.get(i);
+                List<String> result = geoDb.query(constrain);
+                printVerbose(String.format("query: (%s : %s) results %d", i, geoDb.getClass().getSimpleName(), result.size()));
+                resultSet.addAll(result);
             }
         } finally {
             for (GeoDb geoDb : dbList) {
@@ -126,8 +152,8 @@ public class SafeUpdateInventory implements Inventory {
                 SimpleInventory.dumpEntries(geoDb.entries(), csvWriter);
                 geoDb.close();
             }
-            
-            for (GeoDb updateDB : openIncrementalUpdateDB()) {
+
+            for (GeoDb updateDB : openUpdateDBs()) {
                 SimpleInventory.dumpEntries(updateDB.entries(), csvWriter);
                 updateDB.close();
             }
@@ -143,24 +169,28 @@ public class SafeUpdateInventory implements Inventory {
     }
 
     private Optional<GeoDb> openCompressedDB(String[] indexFiles) throws IOException {
+        printVerbose("openCompressedDB from: " + Arrays.toString(indexFiles));
         if (indexFiles.length > 0) {
             // read the newest DB
             ImageInputStream iis = streamFactory.createImageInputStream(indexFiles[0]);
             GeoDb compressedGeoDb = new CompressedGeoDb(maxLevel, useIndex);
             compressedGeoDb.open(iis);
+            printVerbose("openCompressedDB size: " + compressedGeoDb.size());
             return Optional.of(compressedGeoDb);
         }
         return Optional.empty();
     }
 
-    private GeoDb[] openIncrementalUpdateDB() throws IOException {
-        String[] updateCsvFiles = listIncrementalFiles();
-        GeoDb[] updateDBs = new GeoDb[updateCsvFiles.length];
-        for (int i = 0; i < updateCsvFiles.length; i++) {
-            String csvFile = updateCsvFiles[i];
+    private GeoDb[] openUpdateDBs() throws IOException {
+        String[] updateFiles = listIncrementalFiles();
+        GeoDb[] updateDBs = new GeoDb[updateFiles.length];
+        for (int i = 0; i < updateFiles.length; i++) {
+            String csvFile = updateFiles[i];
+            printVerbose(String.format("openUpdateDBs (%s) from: %s", i, csvFile));
             ImageInputStream iis = streamFactory.createImageInputStream(csvFile);
             GeoDb csvGeoDb = new CsvGeoDb();
             csvGeoDb.open(iis);
+            printVerbose(String.format("openUpdateDBs (%s) size: %s", i, csvGeoDb.size()));
             updateDBs[i] = csvGeoDb;
         }
         return updateDBs;
@@ -168,5 +198,11 @@ public class SafeUpdateInventory implements Inventory {
 
     private String[] listIncrementalFiles() throws IOException {
         return streamFactory.listWithPrefix(dbDir, prefix);
+    }
+
+    private void printVerbose(String message) {
+        if (verbose) {
+            System.out.println(message);
+        }
     }
 }

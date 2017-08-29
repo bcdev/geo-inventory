@@ -67,6 +67,14 @@ public class CompressedGeoDb implements GeoDb {
             reader.close();
         }
     }
+    
+    public int size() {
+        if (index != null) {
+            return index.size();
+        } else {
+            return entries.size();
+        }
+    }
 
     @Override
     public Iterator<GeoDbEntry> entries() throws IOException {
@@ -95,17 +103,12 @@ public class CompressedGeoDb implements GeoDb {
 
     private void readAllEntries() throws IOException {
         readCompletely = true;
+        entries = new ArrayList<>();
+        coverageList = new ArrayList<>();
+        coverageMap = new HashMap<>();
+        pathSet = new HashSet<>();
         if (reader == null) {
-            entries = new ArrayList<>();
-            coverageList = new ArrayList<>();
-            coverageMap = new HashMap<>();
-            pathSet = new HashSet<>();
             return; // new geoDB
-        } else {
-            entries = new ArrayList<>(index.size());
-            coverageList = new ArrayList<>(reader.numBitmaps());
-            coverageMap = new HashMap<>(reader.numBitmaps());
-            pathSet = new HashSet<>(index.size());
         }
 
         for (int coverageIndex = 0; coverageIndex < reader.numBitmaps(); coverageIndex++) {
@@ -116,7 +119,7 @@ public class CompressedGeoDb implements GeoDb {
 
         int[] startTimes = reader.getStartTimes();
         int[] endTimes = reader.getEndTimes();
-        for (int productIndex = 0; productIndex < index.size(); productIndex++) {
+        for (int productIndex = 0; productIndex < startTimes.length; productIndex++) {
             int startTime = startTimes[productIndex];
             int endTime = endTimes[productIndex];
             int coverageIndex = -1;
@@ -183,7 +186,15 @@ public class CompressedGeoDb implements GeoDb {
 
         @Override
         public int size() {
-            return reader == null ? entries == null ? 0 : entries.size() : reader.getStartTimes().length;
+            if (entries != null) {
+                return entries.size();
+            } else {                
+                if (reader != null) {
+                    return reader.getStartTimes().length;
+                } else {
+                    return 0;
+                }
+            }
         }
 
         @Override

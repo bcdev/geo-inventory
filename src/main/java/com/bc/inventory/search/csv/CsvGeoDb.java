@@ -47,6 +47,10 @@ public class CsvGeoDb implements GeoDb {
     public void close() throws IOException {
         // nothing
     }
+    
+    public int size() {
+        return csvRecordList.size();
+    }
 
     @Override
     public Iterator<GeoDbEntry> entries() throws IOException {

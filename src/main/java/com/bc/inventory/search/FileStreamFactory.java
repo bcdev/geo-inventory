@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -46,6 +47,7 @@ public class FileStreamFactory implements StreamFactory {
             }
         }
         existingFiles.sort(Comparator.comparingLong(File::lastModified));
+        Collections.reverse(existingFiles);
         String[] result = new String[existingFiles.size()];
         for (int i = 0; i < result.length; i++) {
             result[i] = existingFiles.get(i).getPath();
