@@ -33,6 +33,7 @@ public class SafeUpdateInventory implements Inventory {
     private final boolean useIndex;
     private String prefix;
     private boolean verbose;
+    private boolean failOnMissingDB;
 
     public SafeUpdateInventory(StreamFactory streamFactory, String dbDir) {
         this(streamFactory, dbDir, 4, true);
@@ -56,6 +57,10 @@ public class SafeUpdateInventory implements Inventory {
 
     public void setVerbose(boolean verbose) {
         this.verbose = verbose;
+    }
+
+    public void setFailOnMissingDB(boolean failOnMissingDB) {
+        this.failOnMissingDB = failOnMissingDB;
     }
 
     @Override
@@ -129,6 +134,10 @@ public class SafeUpdateInventory implements Inventory {
         List<GeoDb> dbList = new ArrayList<>();
         openCompressedDB().ifPresent(dbList::add);
         Collections.addAll(dbList, openUpdateDBs());
+        
+        if (dbList.isEmpty() && failOnMissingDB) {
+            throw new IOException(String.format("Inventory does not exist: '%s'", dbDir));
+        }
 
         Set<String> resultSet = new HashSet<>();
         try {
