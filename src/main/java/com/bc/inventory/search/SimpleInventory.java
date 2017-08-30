@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -53,7 +54,7 @@ public class SimpleInventory implements Inventory {
     }
 
     @Override
-    public List<String> query(Constrain constrain) throws IOException {
+    public List<String> query(Constrain... constrains) throws IOException {
         CompressedGeoDb compressedGeoDb = new CompressedGeoDb(maxLevel, useIndex);
         if (!streamFactory.exists(indexFilename)) {
             throw new IllegalArgumentException("geo index does not exits:" + indexFilename);
@@ -61,7 +62,11 @@ public class SimpleInventory implements Inventory {
         ImageInputStream iis = streamFactory.createImageInputStream(indexFilename);
         compressedGeoDb.open(iis);
         try {
-            return compressedGeoDb.query(constrain);
+            List<String> results = new ArrayList<>();
+            for (Constrain constrain : constrains) {
+                results.addAll(compressedGeoDb.query(constrain));
+            }
+            return results;
         } finally {
             compressedGeoDb.close();
         }

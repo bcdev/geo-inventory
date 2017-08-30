@@ -72,7 +72,6 @@ public class FileStreamFactory implements StreamFactory {
         String[] result = new String[list.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = new File(dir, list[i]).getPath();
-
         }
         return result;
     }

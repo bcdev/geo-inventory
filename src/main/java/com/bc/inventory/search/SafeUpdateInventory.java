@@ -47,7 +47,7 @@ public class SafeUpdateInventory implements Inventory {
         this.maxLevel = maxLevel;
         this.useIndex = useIndex;
         this.prefix = "CSV";
-        this.verbose = false;
+        this.verbose = true;
     }
 
     public void setPrefix(String prefix) {
@@ -113,19 +113,33 @@ public class SafeUpdateInventory implements Inventory {
     }
 
     @Override
-    public List<String> query(Constrain constrain) throws IOException {
-        printVerbose("query: constrain " + constrain);
+    public List<String> query(Constrain... constrains) throws IOException {
+        if (constrains.length == 0) {
+            return Collections.EMPTY_LIST;
+        }
+        if (verbose) {
+            if (constrains.length == 1) {
+                printVerbose("query: constrain " + constrains[0]);
+            } else {
+                for (int i = 0; i < constrains.length; i++) {
+                    printVerbose(String.format("query: constrain[%s] %s", i, constrains[i]));
+                }
+            }
+        }
         List<GeoDb> dbList = new ArrayList<>();
         openCompressedDB().ifPresent(dbList::add);
         Collections.addAll(dbList, openUpdateDBs());
 
         Set<String> resultSet = new HashSet<>();
         try {
-            for (int i = 0; i < dbList.size(); i++) {
-                GeoDb geoDb = dbList.get(i);
-                List<String> result = geoDb.query(constrain);
-                printVerbose(String.format("query: (%s : %s) results %d", i, geoDb.getClass().getSimpleName(), result.size()));
-                resultSet.addAll(result);
+            for (int dbIndex = 0; dbIndex < dbList.size(); dbIndex++) {
+                GeoDb geoDb = dbList.get(dbIndex);
+                for (int constrainIndex = 0; constrainIndex < constrains.length; constrainIndex++) {
+                    Constrain constrain = constrains[constrainIndex];
+                    List<String> result = geoDb.query(constrain);
+                    printVerbose(String.format("query: (constrain %s)(db %s : %s) results %d", constrainIndex, dbIndex, geoDb.getClass().getSimpleName(), result.size()));
+                    resultSet.addAll(result);
+                }
             }
         } finally {
             for (GeoDb geoDb : dbList) {
@@ -202,7 +216,7 @@ public class SafeUpdateInventory implements Inventory {
 
     private void printVerbose(String message) {
         if (verbose) {
-            System.out.println(message);
+            System.out.println("geoDB " + message);
         }
     }
 }
