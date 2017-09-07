@@ -65,6 +65,7 @@ public class SafeUpdateInventory implements Inventory {
 
     @Override
     public int updateIndex(String... filenames) throws IOException {
+        long t1 = System.currentTimeMillis();
         if (filenames.length == 0) {
             filenames = listIncrementalFiles();
         }
@@ -114,6 +115,8 @@ public class SafeUpdateInventory implements Inventory {
             printVerbose("updateIndex: deleting " + filename);
             streamFactory.delete(filename);
         }
+        long t2 = System.currentTimeMillis();
+        printVerbose(String.format("updateIndex: took %d ms", t2 - t1));
         return addedProducts;
     }
 
