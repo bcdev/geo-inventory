@@ -38,10 +38,10 @@ public class CompressedGeoDb implements GeoDb {
     private QuerySolver querySolver;
 
     private boolean readCompletely;
-    private List<DbFile.Entry> entries;
-    private List<S2Integer.Coverage> coverageList;
-    private Map<S2Integer.Coverage, Integer> coverageMap;
-    private Set<String> pathSet;
+    private final List<DbFile.Entry> entries;
+    private final List<S2Integer.Coverage> coverageList;
+    private final Map<S2Integer.Coverage, Integer> coverageMap;
+    private final Set<String> pathSet;
     private GeoIndex index;
 
     public CompressedGeoDb() {
@@ -51,6 +51,10 @@ public class CompressedGeoDb implements GeoDb {
     public CompressedGeoDb(int maxLevel, boolean useIndex) {
         this.maxLevel = maxLevel;
         this.useIndex = useIndex;
+        this.entries = new ArrayList<>();
+        this.coverageList = new ArrayList<>();
+        this.coverageMap = new HashMap<>();
+        this.pathSet = new HashSet<>();
     }
 
     @Override
@@ -103,10 +107,6 @@ public class CompressedGeoDb implements GeoDb {
 
     private void readAllEntries() throws IOException {
         readCompletely = true;
-        entries = new ArrayList<>();
-        coverageList = new ArrayList<>();
-        coverageMap = new HashMap<>();
-        pathSet = new HashSet<>();
         if (reader == null) {
             return; // new geoDB
         }
@@ -186,14 +186,10 @@ public class CompressedGeoDb implements GeoDb {
 
         @Override
         public int size() {
-            if (entries != null) {
-                return entries.size();
-            } else {                
-                if (reader != null) {
-                    return reader.getStartTimes().length;
-                } else {
-                    return 0;
-                }
+            if (reader != null) {
+                return reader.getStartTimes().length;
+            } else {
+                return 0;
             }
         }
 
