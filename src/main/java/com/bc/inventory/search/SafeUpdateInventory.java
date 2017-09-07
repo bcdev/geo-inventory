@@ -122,6 +122,7 @@ public class SafeUpdateInventory implements Inventory {
         if (constrains.length == 0) {
             return Collections.EMPTY_LIST;
         }
+        long t1 = System.currentTimeMillis();
         if (verbose) {
             if (constrains.length == 1) {
                 printVerbose("query: constrain " + constrains[0]);
@@ -155,6 +156,8 @@ public class SafeUpdateInventory implements Inventory {
                 geoDb.close();
             }
         }
+        long t2 = System.currentTimeMillis();
+        printVerbose(String.format("query: took %d ms", t2 - t1));
         return new ArrayList<>(resultSet);
     }
 
