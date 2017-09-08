@@ -31,9 +31,9 @@ public class SafeUpdateInventory implements Inventory {
     private final String indexFilenameNew;
     private final int maxLevel;
     private final boolean useIndex;
-    private String prefix;
     private boolean verbose;
     private boolean failOnMissingDB;
+    private String updatePrefix;
     private String atticPrefix;
     private String atticSuffix;
 
@@ -49,14 +49,11 @@ public class SafeUpdateInventory implements Inventory {
         this.indexFilenameNew = dbDir + "/geo_index.new";
         this.maxLevel = maxLevel;
         this.useIndex = useIndex;
-        this.prefix = "CSV";
         this.verbose = true;
+        this.failOnMissingDB = false;
+        this.updatePrefix = "CSV";
         this.atticPrefix = "scan.";
         this.atticSuffix = ".csv";
-    }
-
-    public void setPrefix(String prefix) {
-        this.prefix = prefix;
     }
 
     public void setVerbose(boolean verbose) {
@@ -65,6 +62,10 @@ public class SafeUpdateInventory implements Inventory {
 
     public void setFailOnMissingDB(boolean failOnMissingDB) {
         this.failOnMissingDB = failOnMissingDB;
+    }
+
+    public void setUpdatePrefix(String updatePrefix) {
+        this.updatePrefix = updatePrefix;
     }
 
     public void setAtticPrefix(String atticPrefix) {
@@ -239,7 +240,7 @@ public class SafeUpdateInventory implements Inventory {
     }
 
     private String[] listIncrementalFiles() throws IOException {
-        return streamFactory.listWithPrefix(dbDir, prefix);
+        return streamFactory.listWithPrefix(dbDir, updatePrefix);
     }
 
     private void printVerbose(String message) {
