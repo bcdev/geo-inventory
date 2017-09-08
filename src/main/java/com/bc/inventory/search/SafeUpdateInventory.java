@@ -22,7 +22,7 @@ import java.util.Set;
 
 public class SafeUpdateInventory implements Inventory {
 
-    private static final DateFormat ATTIC_DATE_FORMAT = TimeUtils.createDateFormat("yyyyMMdd_HHmmss_SSS");
+    private static final DateFormat ATTIC_DATE_FORMAT = TimeUtils.createDateFormat("yyyy-MM-dd_HH-mm-ss_SSS");
 
     private final StreamFactory streamFactory;
     private final String dbDir;
@@ -34,6 +34,8 @@ public class SafeUpdateInventory implements Inventory {
     private String prefix;
     private boolean verbose;
     private boolean failOnMissingDB;
+    private String atticPrefix;
+    private String atticSuffix;
 
     public SafeUpdateInventory(StreamFactory streamFactory, String dbDir) {
         this(streamFactory, dbDir, 4, true);
@@ -49,6 +51,8 @@ public class SafeUpdateInventory implements Inventory {
         this.useIndex = useIndex;
         this.prefix = "CSV";
         this.verbose = true;
+        this.atticPrefix = "scan.";
+        this.atticSuffix = ".csv";
     }
 
     public void setPrefix(String prefix) {
@@ -61,6 +65,14 @@ public class SafeUpdateInventory implements Inventory {
 
     public void setFailOnMissingDB(boolean failOnMissingDB) {
         this.failOnMissingDB = failOnMissingDB;
+    }
+
+    public void setAtticPrefix(String atticPrefix) {
+        this.atticPrefix = atticPrefix;
+    }
+
+    public void setAtticSuffix(String atticSuffix) {
+        this.atticSuffix = atticSuffix;
     }
 
     @Override
@@ -108,9 +120,10 @@ public class SafeUpdateInventory implements Inventory {
         // rename ".new" to older name
         streamFactory.rename(indexFilenameNew, olderDbName);
 
-        String atticFilename = "/attic/" + ATTIC_DATE_FORMAT.format(new Date(System.currentTimeMillis())) + ".csv";
-        streamFactory.concat(filenames, dbDir + atticFilename);
-        printVerbose("updateIndex: creating archive " + atticFilename);
+        String atticName = atticPrefix + ATTIC_DATE_FORMAT.format(new Date(System.currentTimeMillis())) + atticSuffix;
+        String atticPath = "/attic/" + atticName;
+        streamFactory.concat(filenames, dbDir + atticPath);
+        printVerbose("updateIndex: creating archive " + atticPath);
         for (String filename : filenames) {
             printVerbose("updateIndex: deleting " + filename);
             streamFactory.delete(filename);
