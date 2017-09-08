@@ -121,7 +121,7 @@ public class SafeUpdateInventory implements Inventory {
         // rename ".new" to older name
         streamFactory.rename(indexFilenameNew, olderDbName);
 
-        String atticName = atticPrefix + ATTIC_DATE_FORMAT.format(new Date(System.currentTimeMillis())) + atticSuffix;
+        String atticName = atticPrefix + ATTIC_DATE_FORMAT.format(new Date()) + atticSuffix;
         String atticPath = "/attic/" + atticName;
         streamFactory.concat(filenames, dbDir + atticPath);
         printVerbose("updateIndex: creating archive " + atticPath);
@@ -130,7 +130,7 @@ public class SafeUpdateInventory implements Inventory {
             streamFactory.delete(filename);
         }
         long t2 = System.currentTimeMillis();
-        printVerbose(String.format("updateIndex: took %d ms", t2 - t1));
+        printVerbose(String.format("updateIndex: took %,d ms", t2 - t1));
         return addedProducts;
     }
 
@@ -174,7 +174,7 @@ public class SafeUpdateInventory implements Inventory {
             }
         }
         long t2 = System.currentTimeMillis();
-        printVerbose(String.format("query: took %d ms", t2 - t1));
+        printVerbose(String.format("query: took %,d ms", t2 - t1));
         return new ArrayList<>(resultSet);
     }
 
