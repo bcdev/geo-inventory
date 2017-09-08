@@ -105,26 +105,26 @@ public class SafeUpdateInventory implements Inventory {
         }
 
         // remove older one from ".a" and ".b"
-        String olderDbName = null;
+        String oldDbName = null;
         if (indexFiles.length == 0) {
-            olderDbName = indexFilenameA;
+            oldDbName = indexFilenameA;
         } else if (indexFiles.length == 1) {
             if (indexFiles[0].endsWith(".a")) {
-                olderDbName = indexFilenameB;
+                oldDbName = indexFilenameB;
             } else {
-                olderDbName = indexFilenameA;
+                oldDbName = indexFilenameA;
             }
         } else if (indexFiles.length == 2) {
-            olderDbName = indexFiles[1];
+            oldDbName = indexFiles[1];
         }
-        printVerbose(String.format("updateIndex: renaming  (%s) -> (%s)", indexFilenameNew, olderDbName));
+        printVerbose(String.format("updateIndex: renaming  (%s) -> (%s)", indexFilenameNew, oldDbName));
         // rename ".new" to older name
-        streamFactory.rename(indexFilenameNew, olderDbName);
+        streamFactory.rename(indexFilenameNew, oldDbName);
 
         String atticName = atticPrefix + ATTIC_DATE_FORMAT.format(new Date()) + atticSuffix;
         String atticPath = "/attic/" + atticName;
         streamFactory.concat(filenames, dbDir + atticPath);
-        printVerbose("updateIndex: creating archive " + atticPath);
+        printVerbose("updateIndex: creating archive " + dbDir + atticPath);
         for (String filename : filenames) {
             printVerbose("updateIndex: deleting " + filename);
             streamFactory.delete(filename);
