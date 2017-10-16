@@ -59,6 +59,11 @@ public class CompressedGeoDbTest {
         Constrain constrain = new Constrain.Builder("q").startDate("2005-01-06").build();
         List<String> result = compressedGeoDb2.query(constrain);
         assertEquals(1, result.size());
+        
+        // no time constraint returns all products
+        constrain = new Constrain.Builder("q").build();
+        result = compressedGeoDb2.query(constrain);
+        assertEquals(2, result.size());
     }
     
     private int startAsInt(String date) throws ParseException {
