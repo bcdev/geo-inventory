@@ -92,6 +92,12 @@ public class SafeUpdateInventory implements Inventory {
         GeoDbUpdater dBUpdater = compressedDb.getDbUpdater();
         
         int addedProducts = SimpleInventory.updateFromCSV(dBUpdater, filenames, streamFactory);
+        if (addedProducts == 0) {
+            printVerbose("updateIndex: update file contains no entries, skip writing");
+            compressedDb.close();
+            moveScansToAttic(filenames);
+            return addedProducts;
+        }
         printVerbose(String.format("updateIndex: added %s products, new size %s", addedProducts, compressedDb.size()));
         compressedDb.close();
 
@@ -121,6 +127,13 @@ public class SafeUpdateInventory implements Inventory {
         // rename ".new" to older name
         streamFactory.rename(indexFilenameNew, oldDbName);
 
+        moveScansToAttic(filenames);
+        long t2 = System.currentTimeMillis();
+        printVerbose(String.format("updateIndex: took %,d ms", t2 - t1));
+        return addedProducts;
+    }
+
+    private void moveScansToAttic(String[] filenames) throws IOException {
         String atticName = atticPrefix + ATTIC_DATE_FORMAT.format(new Date()) + atticSuffix;
         String atticPath = "/attic/" + atticName;
         streamFactory.concat(filenames, dbDir + atticPath);
@@ -129,9 +142,6 @@ public class SafeUpdateInventory implements Inventory {
             printVerbose("updateIndex: deleting " + filename);
             streamFactory.delete(filename);
         }
-        long t2 = System.currentTimeMillis();
-        printVerbose(String.format("updateIndex: took %,d ms", t2 - t1));
-        return addedProducts;
     }
 
     @Override
