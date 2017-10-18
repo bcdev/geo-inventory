@@ -171,11 +171,15 @@ public class SafeUpdateInventory implements Inventory {
         try {
             for (int dbIndex = 0; dbIndex < dbList.size(); dbIndex++) {
                 GeoDb geoDb = dbList.get(dbIndex);
+                String dbClassName = geoDb.getClass().getSimpleName();
                 for (int constrainIndex = 0; constrainIndex < constrains.length; constrainIndex++) {
                     Constrain constrain = constrains[constrainIndex];
                     List<String> result = geoDb.query(constrain);
-                    printVerbose(String.format("query: (constrain %s)(db %s : %s) results %d", constrainIndex, dbIndex, geoDb.getClass().getSimpleName(), result.size()));
-                    resultSet.addAll(result);
+                    int numResults = result.size();
+                    if (numResults > 0) {
+                        printVerbose(String.format("query: (constrain %s)(db %s : %s) #results=%d", constrainIndex, dbIndex, dbClassName, numResults));
+                        resultSet.addAll(result);
+                    }
                 }
             }
         } finally {
@@ -239,11 +243,10 @@ public class SafeUpdateInventory implements Inventory {
         GeoDb[] updateDBs = new GeoDb[updateFiles.length];
         for (int i = 0; i < updateFiles.length; i++) {
             String csvFile = updateFiles[i];
-            printVerbose(String.format("openUpdateDBs (%s) from: %s", i, csvFile));
             ImageInputStream iis = streamFactory.createImageInputStream(csvFile);
             GeoDb csvGeoDb = new CsvGeoDb();
             csvGeoDb.open(iis);
-            printVerbose(String.format("openUpdateDBs (%s) size: %s", i, csvGeoDb.size()));
+            printVerbose(String.format("openUpdateDBs (%s) from: %s (size: %s)", i, csvFile, csvGeoDb.size()));
             updateDBs[i] = csvGeoDb;
         }
         return updateDBs;
