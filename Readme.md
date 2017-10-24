@@ -9,5 +9,5 @@ Currently following implementations are available:
 
 The geo test are performed using the google S2 library.
 
-See [CHANGES.md] for changes.
+See [CHANGES](https://github.com/bcdev/geo-inventory/blob/master/CHANGES.md) for changes.
 
