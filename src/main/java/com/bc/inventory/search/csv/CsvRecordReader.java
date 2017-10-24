@@ -98,10 +98,21 @@ public class CsvRecordReader {
             return null;
         }
         String[] splits = line.split("\t");
+        if (splits.length < 4) {
+            throw new IllegalArgumentException("Can not parse: " + line);
+        }
+        // make sure: either both dates are given or none
+        long startTime = parseDateTime(splits[1]);
+        long endTime = parseDateTime(splits[2]);
+        if (startTime == -1 && endTime != -1) {
+            startTime = endTime;
+        } else if (endTime == -1 && startTime != -1) {
+            endTime = startTime;
+        }
         return new CsvRecord(
                 splits[0],
-                parseDateTime(splits[1]),
-                parseDateTime(splits[2]),
+                startTime,
+                endTime,
                 parsePolygon(splits[3])
         );
     }
