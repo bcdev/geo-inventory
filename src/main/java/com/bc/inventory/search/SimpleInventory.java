@@ -97,11 +97,18 @@ public class SimpleInventory implements Inventory {
         while (entries.hasNext()) {
             GeoDbEntry geoDbEntry = entries.next();
             String path = geoDbEntry.getPath();
-            String startTime = DATE_FORMAT.format(TimeUtils.minuteTimeAsDate(geoDbEntry.getStartTime()));
-            String endTime = DATE_FORMAT.format(TimeUtils.minuteTimeAsDate(geoDbEntry.getEndTime()));
+            String startTime = formatTime(geoDbEntry.getStartTime());
+            String endTime = formatTime(geoDbEntry.getEndTime());
             String wkt = S2WKTWriter.write(geoDbEntry.getPolygon());
             csvWriter.write(String.format("%s\t%s\t%s\t%s%n", path, startTime, endTime, wkt));
         }
+    }
+
+    private static String formatTime(int time) {
+        if (time < 0) {
+            return "null";
+        }
+        return DATE_FORMAT.format(TimeUtils.minuteTimeAsDate(time));
     }
 
     static int updateFromCSV(GeoDbUpdater dbUpdater, String[] filenames, StreamFactory streamFactory) throws IOException {
