@@ -65,56 +65,49 @@ public class QuerySolver {
         }
     }
 
-    private List<Integer> testOnIndex(int startTime, int endTime, boolean useOnlyProductStart, S2Point point, S2Polygon
-        polygon) {
+    private List<Integer> testOnIndex(int startTime, int endTime, boolean useOnlyProductStart, 
+                                      S2Point point, S2Polygon polygon) {
         List<Integer> results = new ArrayList<>();
-        int productIndex;
-        if (startTime == -1) {
-            productIndex = 0;
-        } else {
+        int productIndex = 0;
+        while(productIndex < index.size() && index.getStartTime(productIndex) == -1) {
+            checkGeoApproximation(point, polygon, results, productIndex);
+            productIndex++;
+        }
+        if (startTime != -1) {
             productIndex = index.getIndexForTime(startTime);
             if (productIndex == -1) {
                 return results;
             }
         }
 
-        while (true) {
-            if (productIndex >= index.size()) {
+        while (productIndex < index.size()) {
+            if (endTime != -1 && index.getStartTime(productIndex) >= endTime) {
                 break;
-            }
-            if (useOnlyProductStart) {
-                if (endTime != -1 && index.getStartTime(productIndex) >= endTime) {
-                    break;
-                } else if (startTime != -1 && index.getStartTime(productIndex) < startTime) {
-                    // this product starts too early, skip
-                    productIndex++;
-                    continue;
-                }
-            } else {
-                if (endTime != -1 && index.getStartTime(productIndex) > endTime) {
-                    break;
-                } else if (startTime != -1 && index.getEndTime(productIndex) < startTime) {
-                    // this product ends too early, but the next could be longer
-                    productIndex++;
-                    continue;
-                }
+            } else if (startTime != -1 && (useOnlyProductStart ? index.getStartTime(productIndex) : index.getEndTime(productIndex)) < startTime) {
+                // this product starts or ends too early, skip
+                productIndex++;
+                continue;
             }
 
             // time matches, now test geo
-            if (point != null) {
-                if (index.approximationContainsPoint(productIndex, point)) {
-                    results.add(productIndex);
-                }
-            } else if (polygon != null) {
-                if (index.approximationIntersectsPolygon(productIndex, polygon)) {
-                    results.add(productIndex);
-                }
-            } else {
-                results.add(productIndex);
-            }
+            checkGeoApproximation(point, polygon, results, productIndex);
             productIndex++;
         }
         return results;
+    }
+
+    private void checkGeoApproximation(S2Point point, S2Polygon polygon, List<Integer> results, int productIndex) {
+        if (point != null) {
+            if (index.approximationContainsPoint(productIndex, point)) {
+                results.add(productIndex);
+            }
+        } else if (polygon != null) {
+            if (index.approximationIntersectsPolygon(productIndex, polygon)) {
+                results.add(productIndex);
+            }
+        } else {
+            results.add(productIndex);
+        }
     }
 
     private List<String> testPolygonOnData( List<Integer> uniqueProductList, S2Polygon searchPolygon, int numResults) {
