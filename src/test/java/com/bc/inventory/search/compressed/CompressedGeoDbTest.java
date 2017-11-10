@@ -13,6 +13,7 @@ import org.junit.Test;
 import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -49,23 +50,32 @@ public class CompressedGeoDbTest {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         dbUpdater.write(baos);
         assertEquals(343, baos.size());
-        
-        MemoryCacheImageInputStream iis = new MemoryCacheImageInputStream(new ByteArrayInputStream(baos.toByteArray()));
+        byte[] byteArray = baos.toByteArray();
+
         CompressedGeoDb compressedGeoDb2 = new CompressedGeoDb();
-        compressedGeoDb2.open(iis);
+        compressedGeoDb2.open(new ByteArrayInputStream(byteArray));
+        assertQuery(compressedGeoDb2);
+
+        CompressedGeoDb compressedGeoDb3 = new CompressedGeoDb();
+        compressedGeoDb3.open(new MemoryCacheImageInputStream(new ByteArrayInputStream(byteArray)));
+        assertQuery(compressedGeoDb3);
+        
+    }
+
+    private void assertQuery(CompressedGeoDb compressedGeoDb2) throws IOException {
         ArrayList<GeoDbEntry> entryList2 = Lists.newArrayList(compressedGeoDb2.entries());
         assertEquals(2, entryList2.size());
 
         Constrain constrain = new Constrain.Builder("q").startDate("2005-01-06").build();
         List<String> result = compressedGeoDb2.query(constrain);
         assertEquals(1, result.size());
-        
+
         // no time constraint returns all products
         constrain = new Constrain.Builder("q").build();
         result = compressedGeoDb2.query(constrain);
         assertEquals(2, result.size());
     }
-    
+
     private int startAsInt(String date) throws ParseException {
         return TimeUtils.startTimeInMin(DATE_FORMAT.parse(date).getTime());      
     }
