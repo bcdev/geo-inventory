@@ -9,6 +9,7 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -132,9 +133,8 @@ class DbFile {
         }
     }
 
-    static class Reader implements AutoCloseable {
+    static abstract class Reader implements AutoCloseable {
 
-        private final ImageInputStream iis;
         private final int blockSize;
         private final boolean useIndex;
         private int numEntries;
@@ -153,33 +153,28 @@ class DbFile {
         private int currentEntryInBlock;
         private int[][] coverages;
 
-        Reader(ImageInputStream iis, boolean useIndex) {
-            this(iis, DEFAULT_BLOCK_SIZE, useIndex);
-        }
-
-        Reader(ImageInputStream iis, int blockSize, boolean useIndex) {
-            this.iis = iis;
+        Reader(int blockSize, boolean useIndex) {
             this.blockSize = blockSize;
             this.useIndex = useIndex;
         }
 
         void readIndex() throws IOException {
-            byte[] header = new byte[FILE_MARKER.length()];
-            iis.readFully(header);
-            if (!FILE_MARKER.equals(new String(header))) {
+            ByteBuffer bb = ByteBuffer.allocate(FILE_MARKER.length() + 4 + (useIndex ? 4 : 0));
+            readFully(bb.array());
+            if (!FILE_MARKER.equals(new String(bb.array(), 0, FILE_MARKER.length()))) {
                 throw new IllegalArgumentException("file header does not match");
             }
-            numEntries = iis.readInt();
+            bb.position(FILE_MARKER.length());
+            numEntries = bb.getInt();
 
-            ByteBuffer bb;
             int numBitmaps = 0;
             if (useIndex) {
-                numBitmaps = iis.readInt();
+                numBitmaps = bb.getInt();
                 bb = ByteBuffer.allocate(3 * 4 * numEntries + 4 * numBitmaps);
             } else {
                 bb = ByteBuffer.allocate(2 * 4 * numEntries);
             }
-            iis.readFully(bb.array());
+            readFully(bb.array());
 
             IntBuffer intBuffer = bb.asIntBuffer();
             startTimes = new int[numEntries];
@@ -202,7 +197,7 @@ class DbFile {
             int numBlocks = getNumBlocks(numEntries, blockSize);
             blockSizes = readIntArray(numBlocks);
             blockOffsets = new int[blockSizes.length];
-            int beginOfBlocks = (int) iis.getStreamPosition();
+            int beginOfBlocks = getPosition();
             for (int i = 0; i < blockSizes.length; i++) {
                 if (i == 0) {
                     blockOffsets[i] = beginOfBlocks;
@@ -263,9 +258,9 @@ class DbFile {
         }
 
         private void readBlock(int blockId) throws IOException {
-            iis.seek(blockOffsets[blockId]);
+            seek(blockOffsets[blockId]);
             blockBB = ByteBuffer.allocate(blockSizes[blockId]);
-            iis.readFully(blockBB.array());
+            readFully(blockBB.array());
 
             int compressedPathSize = blockBB.getInt();
             blockPath = decompressStrings(blockBB.array(), 4, compressedPathSize);
@@ -288,22 +283,115 @@ class DbFile {
             }
         }
 
-        @Override
-        public void close() throws IOException {
-            iis.close();
-        }
 
         private int[] readIntArray(int numInts) throws IOException {
             ByteBuffer byteBuf = ByteBuffer.allocate(numInts * 4);
-            iis.readFully(byteBuf.array());
+            readFully(byteBuf.array());
             IntBuffer intBuf = byteBuf.asIntBuffer();
             int[] result = new int[numInts];
             intBuf.get(result);
             return result;
         }
-
+        
+        abstract void readFully(byte[] b) throws IOException;
+        
+        abstract int getPosition() throws IOException;
+        
+        abstract void seek(int pos) throws IOException;
+        
     }
-    
+
+    static class ImageInputStreamReader extends Reader {
+        private final ImageInputStream iis;
+
+        ImageInputStreamReader(ImageInputStream iis) {
+            this(iis, DEFAULT_BLOCK_SIZE, true);
+        }
+        
+        ImageInputStreamReader(ImageInputStream iis, boolean useIndex) {
+            this(iis, DEFAULT_BLOCK_SIZE, useIndex);
+        }
+
+        ImageInputStreamReader(ImageInputStream iis, int blockSize, boolean useIndex) {
+            super(blockSize, useIndex);
+            this.iis = iis;
+        }
+
+        @Override
+        void readFully(byte[] b) throws IOException {
+            iis.readFully(b);
+        }
+
+        @Override
+        int getPosition() throws IOException {
+            return (int) iis.getStreamPosition();
+        }
+
+        @Override
+        protected void seek(int pos) throws IOException {
+           iis.seek(pos); 
+        }
+
+        @Override
+        public void close() throws IOException {
+            iis.close();
+        }
+    }
+
+    static class InputStreamReader extends Reader {
+        private final InputStream is;
+        private int currentPos;
+
+        InputStreamReader(InputStream is) {
+            this(is, DEFAULT_BLOCK_SIZE, true);
+        }
+        
+        InputStreamReader(InputStream is, boolean useIndex) {
+            this(is, DEFAULT_BLOCK_SIZE, useIndex);
+        }
+
+        InputStreamReader(InputStream is, int blockSize, boolean useIndex) {
+            super(blockSize, useIndex);
+            this.is = is;
+            this.currentPos = 0;
+        }
+
+        @Override
+        void readFully(byte[] b) throws IOException {
+            int off = 0;
+            int len = b.length;
+            while (len > 0) {
+                int nbytes = is.read(b, off, len);
+                if (nbytes == -1) {
+                    throw new EOFException();
+                }
+                off += nbytes;
+                len -= nbytes;
+                currentPos += nbytes;
+            }
+        }
+        
+        @Override
+        int getPosition() throws IOException {
+            return currentPos;
+        }
+        
+        @Override
+        protected void seek(int pos) throws IOException {
+            if (pos >= currentPos) {
+                long skipped = is.skip(pos - currentPos);
+                currentPos += skipped;
+            } else {
+                throw new IOException("Backwards seeking not supported when using InputStream based implementation.");
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            is.close();
+        }
+    }
+       
     static class Entry {
 
         final int startTime;

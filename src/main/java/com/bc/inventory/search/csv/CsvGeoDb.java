@@ -15,6 +15,7 @@ import com.sun.imageio.plugins.common.InputStreamAdapter;
 
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -29,8 +30,12 @@ public class CsvGeoDb implements GeoDb {
 
     @Override
     public void open(ImageInputStream iis) throws IOException {
-        csvRecordList = CsvRecordReader.readAllRecords(new InputStreamAdapter(iis));
-        iis.close();
+        open(new InputStreamAdapter(iis));
+    }
+    @Override
+    public void open(InputStream is) throws IOException {
+        csvRecordList = CsvRecordReader.readAllRecords(is);
+        is.close();
         csvRecordList.sort(Comparator.comparingLong(CsvRecord::getStartTime));
 
         startTimes = new int[csvRecordList.size()];

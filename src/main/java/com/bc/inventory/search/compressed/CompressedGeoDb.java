@@ -17,6 +17,7 @@ import com.google.common.geometry.S2Polygon;
 
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -59,7 +60,15 @@ public class CompressedGeoDb implements GeoDb {
 
     @Override
     public void open(ImageInputStream iis) throws IOException {
-        reader = new DbFile.Reader(iis, useIndex);
+        reader = new DbFile.ImageInputStreamReader(iis, useIndex);
+        reader.readIndex();
+        index = new Index();
+        querySolver = new QuerySolver(index);
+    }
+    
+    @Override
+    public void open(InputStream is) throws IOException {
+        reader = new DbFile.InputStreamReader(is, useIndex);
         reader.readIndex();
         index = new Index();
         querySolver = new QuerySolver(index);
@@ -68,7 +77,11 @@ public class CompressedGeoDb implements GeoDb {
     @Override
     public void close() throws IOException {
         if (reader != null) {
-            reader.close();
+            try {
+                reader.close();
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
         }
     }
     
