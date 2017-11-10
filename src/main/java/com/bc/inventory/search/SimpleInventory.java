@@ -8,11 +8,11 @@ import com.bc.inventory.utils.TimeUtils;
 import javax.imageio.stream.ImageInputStream;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.text.DateFormat;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -40,8 +40,7 @@ public class SimpleInventory implements Inventory {
     public int updateIndex(String... filenames) throws IOException {
         GeoDb compressedGeoDb = new CompressedGeoDb(maxLevel, useIndex);
         if (streamFactory.exists(indexFilename)) {
-            ImageInputStream iis = streamFactory.createImageInputStream(indexFilename);
-            compressedGeoDb.open(iis);
+            compressedGeoDb.open(streamFactory.createInputStream(indexFilename));
         }
 
         GeoDbUpdater dbUpdater = compressedGeoDb.getDbUpdater();
@@ -54,19 +53,14 @@ public class SimpleInventory implements Inventory {
     }
 
     @Override
-    public List<String> query(Constrain... constrains) throws IOException {
+    public List<String> query(Constrain constrain) throws IOException {
         CompressedGeoDb compressedGeoDb = new CompressedGeoDb(maxLevel, useIndex);
         if (!streamFactory.exists(indexFilename)) {
             throw new IllegalArgumentException("geo index does not exits:" + indexFilename);
         }
-        ImageInputStream iis = streamFactory.createImageInputStream(indexFilename);
-        compressedGeoDb.open(iis);
+        compressedGeoDb.open(streamFactory.createInputStream(indexFilename));
         try {
-            List<String> results = new ArrayList<>();
-            for (Constrain constrain : constrains) {
-                results.addAll(compressedGeoDb.query(constrain));
-            }
-            return results;
+            return compressedGeoDb.query(constrain);
         } finally {
             compressedGeoDb.close();
         }
@@ -78,8 +72,7 @@ public class SimpleInventory implements Inventory {
         if (!streamFactory.exists(indexFilename)) {
             throw new IllegalArgumentException("geo index does not exits:" + indexFilename);
         }
-        ImageInputStream iis = streamFactory.createImageInputStream(indexFilename);
-        compressedGeoDb.open(iis);
+        compressedGeoDb.open(streamFactory.createInputStream(indexFilename));
 
         OutputStream os;
         if (csvFile == null) {
@@ -114,9 +107,8 @@ public class SimpleInventory implements Inventory {
     static int updateFromCSV(GeoDbUpdater dbUpdater, String[] filenames, StreamFactory streamFactory) throws IOException {
         int counter = 0;
         for (String csvFile : filenames) {
-            ImageInputStream iis = streamFactory.createImageInputStream(csvFile);
             CsvGeoDb csvGeoDb = new CsvGeoDb();
-            csvGeoDb.open(iis);
+            csvGeoDb.open(streamFactory.createInputStream(csvFile));
             Iterator<GeoDbEntry> entries = csvGeoDb.entries();
             while (entries.hasNext()) {
                 dbUpdater.addEntry(entries.next());

@@ -2,6 +2,7 @@ package com.bc.inventory.search;
 
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
@@ -10,6 +11,8 @@ import java.io.OutputStream;
 public interface StreamFactory {
 
     ImageInputStream createImageInputStream(String path) throws IOException;
+    
+    InputStream createInputStream(String path) throws IOException;
 
     OutputStream createOutputStream(String path) throws IOException;
 

@@ -7,6 +7,7 @@ import com.bc.inventory.utils.TimeUtils;
 import javax.imageio.stream.ImageInputStream;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -145,19 +146,13 @@ public class SafeUpdateInventory implements Inventory {
     }
 
     @Override
-    public List<String> query(Constrain... constrains) throws IOException {
-        if (constrains.length == 0) {
-            return Collections.EMPTY_LIST;
+    public List<String> query(Constrain constrain) throws IOException {
+        if (constrain == null) {
+            throw new NullPointerException("constrain");
         }
         long t1 = System.currentTimeMillis();
         if (verbose) {
-            if (constrains.length == 1) {
-                printVerbose("query: constrain " + constrains[0]);
-            } else {
-                for (int i = 0; i < constrains.length; i++) {
-                    printVerbose(String.format("query: constrain[%s] %s", i, constrains[i]));
-                }
-            }
+            printVerbose("query: constrain " + constrain);
         }
         List<GeoDb> dbList = new ArrayList<>();
         openCompressedDB().ifPresent(dbList::add);
@@ -172,14 +167,11 @@ public class SafeUpdateInventory implements Inventory {
             for (int dbIndex = 0; dbIndex < dbList.size(); dbIndex++) {
                 GeoDb geoDb = dbList.get(dbIndex);
                 String dbClassName = geoDb.getClass().getSimpleName();
-                for (int constrainIndex = 0; constrainIndex < constrains.length; constrainIndex++) {
-                    Constrain constrain = constrains[constrainIndex];
-                    List<String> result = geoDb.query(constrain);
-                    int numResults = result.size();
-                    if (numResults > 0) {
-                        printVerbose(String.format("query: (constrain %s)(db %s : %s) #results=%d", constrainIndex, dbIndex, dbClassName, numResults));
-                        resultSet.addAll(result);
-                    }
+                List<String> result = geoDb.query(constrain);
+                int numResults = result.size();
+                if (numResults > 0) {
+                    printVerbose(String.format("query: (db %s : %s) #results=%d", dbIndex, dbClassName, numResults));
+                    resultSet.addAll(result);
                 }
             }
         } finally {
@@ -229,9 +221,9 @@ public class SafeUpdateInventory implements Inventory {
         printVerbose("openCompressedDB from: " + Arrays.toString(indexFiles));
         if (indexFiles.length > 0) {
             // read the newest DB
-            ImageInputStream iis = streamFactory.createImageInputStream(indexFiles[0]);
+            InputStream is = streamFactory.createInputStream(indexFiles[0]);
             GeoDb compressedGeoDb = new CompressedGeoDb(maxLevel, useIndex);
-            compressedGeoDb.open(iis);
+            compressedGeoDb.open(is);
             printVerbose("openCompressedDB size: " + compressedGeoDb.size());
             return Optional.of(compressedGeoDb);
         }
@@ -243,9 +235,9 @@ public class SafeUpdateInventory implements Inventory {
         GeoDb[] updateDBs = new GeoDb[updateFiles.length];
         for (int i = 0; i < updateFiles.length; i++) {
             String csvFile = updateFiles[i];
-            ImageInputStream iis = streamFactory.createImageInputStream(csvFile);
+            InputStream is = streamFactory.createInputStream(csvFile);
             GeoDb csvGeoDb = new CsvGeoDb();
-            csvGeoDb.open(iis);
+            csvGeoDb.open(is);
             printVerbose(String.format("openUpdateDBs (%s) from: %s (size: %s)", i, csvFile, csvGeoDb.size()));
             updateDBs[i] = csvGeoDb;
         }

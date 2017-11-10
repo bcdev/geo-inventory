@@ -2,9 +2,12 @@ package com.bc.inventory.search;
 
 import javax.imageio.stream.FileImageInputStream;
 import javax.imageio.stream.ImageInputStream;
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -20,6 +23,11 @@ public class FileStreamFactory implements StreamFactory {
     @Override
     public ImageInputStream createImageInputStream(String path) throws IOException {
         return new FileImageInputStream(new File(path));
+    }
+
+    @Override
+    public InputStream createInputStream(String path) throws IOException {
+        return new BufferedInputStream(new FileInputStream(new File(path)));
     }
 
     @Override
