@@ -34,20 +34,20 @@ public class QuerySolver {
         if (insituRecords.length == 0) {
             S2Polygon polygon = constrain.getPolygon();
             boolean useOnlyProductStart = constrain.useOnlyProductStart();
-            List<Constrain.DateRange> dateRanges = constrain.getDateRanges();
+            Constrain.DateRange[] dateRanges = constrain.getDateRanges();
             List<Integer> productIDs = null;
             Set<Integer> uniqueProductIds = new HashSet<>();
             for (Constrain.DateRange dateRange : dateRanges) {
                 int start = TimeUtils.startTimeInMin(dateRange.getStart());   // can be -1
                 int end = TimeUtils.endTimeInMin(dateRange.getEnd());         // can be -1
                 List<Integer> someProductIDs = testOnIndex(start, end, useOnlyProductStart, null, polygon);
-                if (dateRanges.size() > 1) {
+                if (dateRanges.length > 1) {
                     uniqueProductIds.addAll(someProductIDs);
                 } else {
                     productIDs = someProductIDs;
                 }
             }
-            if (dateRanges.size() > 1) {
+            if (dateRanges.length > 1) {
                 productIDs = new ArrayList<>(uniqueProductIds);
             }
             return testPolygonOnData(productIDs, polygon, maxNumResults);

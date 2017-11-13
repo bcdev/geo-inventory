@@ -9,6 +9,7 @@ import com.google.common.geometry.S2Polygon;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -23,13 +24,13 @@ public class Constrain {
 
     private final String queryName;
     private final S2Polygon polygon;
-    private final List<DateRange> dateRanges;
+    private final DateRange[] dateRanges;
     private final boolean useOnlyProductStart;
     private final SimpleRecord[] insituRecords;
     private final long timeDelta;
     private final int maxNumResults;
 
-    private Constrain(String queryName, S2Polygon polygon, List<DateRange> dateRanges, boolean useOnlyProductStart, SimpleRecord[] insituRecords, long timeDelta, int maxNumResults) {
+    private Constrain(String queryName, S2Polygon polygon, DateRange[] dateRanges, boolean useOnlyProductStart, SimpleRecord[] insituRecords, long timeDelta, int maxNumResults) {
         this.queryName = queryName;
         this.polygon = polygon;
         this.dateRanges = dateRanges;
@@ -47,7 +48,7 @@ public class Constrain {
         return polygon;
     }
 
-    public List<DateRange> getDateRanges() {
+    public DateRange[] getDateRanges() {
         return dateRanges;
     }
 
@@ -73,8 +74,7 @@ public class Constrain {
         return "Constrain{" +
                 "queryName='" + queryName + '\'' +
                 ", polygon=" + wkt +
-                ", #dateRanges=" + dateRanges.size() +
-                ", dateRanges=" + dateRanges.toString() +
+                ", dateRanges=" + Arrays.toString(dateRanges) +
                 ", useOnlyProductStart=" + useOnlyProductStart +
                 ", insituRecords=" + insituRecords.length +
                 ", timeDelta=" + timeDelta +
@@ -162,7 +162,7 @@ public class Constrain {
             }
             return new Constrain(queryName, 
                                  s2Polygon, 
-                                 dateRanges, 
+                                 dateRanges.toArray(new DateRange[0]), 
                                  useOnlyProductStart, 
                                  insituRecords.toArray(new SimpleRecord[0]), 
                                  timeDelta, 
@@ -210,7 +210,7 @@ public class Constrain {
 
         @Override
         public String toString() {
-            return longAsDateString(start) +", " + longAsDateString(end - DAY_IN_MILLIS);
+            return longAsDateString(start) +":" + longAsDateString(end - DAY_IN_MILLIS);
         }
     }
 }
