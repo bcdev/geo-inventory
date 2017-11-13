@@ -79,22 +79,24 @@ public class CLI {
 
     private static Constrain parseConstraint(String[] args) throws IOException {
         Constrain.Builder cb = new Constrain.Builder();
+        String start = null;
+        String end = null;
         for (int i = 2; i < args.length; ) {
             String key = args[i++];
             String value = args[i++];
             switch (key) {
                 case "startTime":
-                    cb.startDate(value);
+                    start = value;
                     break;
                 case "endTime":
-                    cb.endDate(value);
+                    end = value;
                     break;
                 case "wkt":
-                    cb.polygon(value);
+                    cb.withPolygon(value);
                     break;
                 case "insitu":
-                    cb.insitu(InsituRecords.read(new File(value), SimpleRecord.INSITU_DATE_FORMAT));
-                    cb.timeDelta(HOURS_IN_MILLIS * 3);
+                    cb.withInsituRecords(InsituRecords.read(new File(value), SimpleRecord.INSITU_DATE_FORMAT));
+                    cb.withInsituTimeDelta(HOURS_IN_MILLIS * 3);
                     cb.useOnlyProductStartDate(false);
                     break;
                 default:
@@ -102,6 +104,9 @@ public class CLI {
                     printUsage();
                     System.exit(1);
             }
+        }
+        if (start != null || end != null) {
+            cb.addDateRang(start, end);
         }
         return cb.build();
     }

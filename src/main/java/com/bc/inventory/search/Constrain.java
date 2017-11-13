@@ -2,12 +2,13 @@ package com.bc.inventory.search;
 
 import com.bc.geometry.s2.S2WKTReader;
 import com.bc.geometry.s2.S2WKTWriter;
-import com.bc.inventory.utils.TimeUtils;
 import com.bc.inventory.utils.SimpleRecord;
+import com.bc.inventory.utils.TimeUtils;
 import com.google.common.geometry.S2Polygon;
 
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -22,18 +23,16 @@ public class Constrain {
 
     private final String queryName;
     private final S2Polygon polygon;
-    private final long start;
-    private final long end;
+    private final List<DateRange> dateRanges;
     private final boolean useOnlyProductStart;
     private final SimpleRecord[] insituRecords;
     private final long timeDelta;
     private final int maxNumResults;
 
-    private Constrain(String queryName, S2Polygon polygon, long start, long end, boolean useOnlyProductStart, SimpleRecord[] insituRecords, long timeDelta, int maxNumResults) {
+    private Constrain(String queryName, S2Polygon polygon, List<DateRange> dateRanges, boolean useOnlyProductStart, SimpleRecord[] insituRecords, long timeDelta, int maxNumResults) {
         this.queryName = queryName;
         this.polygon = polygon;
-        this.start = start;
-        this.end = end;
+        this.dateRanges = dateRanges;
         this.useOnlyProductStart = useOnlyProductStart;
         this.insituRecords = insituRecords;
         this.timeDelta = timeDelta;
@@ -48,12 +47,8 @@ public class Constrain {
         return polygon;
     }
 
-    public long getStartTime() {
-        return start;
-    }
-
-    public long getEndTime() {
-        return end;
+    public List<DateRange> getDateRanges() {
+        return dateRanges;
     }
 
     public boolean useOnlyProductStart() {
@@ -78,8 +73,8 @@ public class Constrain {
         return "Constrain{" +
                 "queryName='" + queryName + '\'' +
                 ", polygon=" + wkt +
-                ", start=" + start +
-                ", end=" + end +
+                ", #dateRanges=" + dateRanges.size() +
+                ", dateRanges=" + dateRanges.toString() +
                 ", useOnlyProductStart=" + useOnlyProductStart +
                 ", insituRecords=" + insituRecords.length +
                 ", timeDelta=" + timeDelta +
@@ -90,10 +85,9 @@ public class Constrain {
     public static class Builder {
 
         private final String queryName;
+        private final List<DateRange> dateRanges;
+        private final List<SimpleRecord> insituRecords;
         private S2Polygon s2Polygon = null;
-        private long start = -1;
-        private long end = -1;
-        private SimpleRecord[] insituRecords = new SimpleRecord[0];
         private long timeDelta = -1;
         private int maxNumResults = Integer.MAX_VALUE;
         private boolean useOnlyProductStart;
@@ -104,49 +98,41 @@ public class Constrain {
 
         public Builder(String queryName) {
             this.queryName = queryName;
+            this.dateRanges = new ArrayList<>();
+            this.insituRecords = new ArrayList<>();
         }
 
-        public Constrain.Builder polygon(S2Polygon polygon) {
+        public Constrain.Builder withPolygon(S2Polygon polygon) {
             this.s2Polygon = polygon;
             return this;
         }
 
-        public Constrain.Builder polygon(String polygonWKT) {
+        public Constrain.Builder withPolygon(String polygonWKT) {
             S2WKTReader wktReader = new S2WKTReader();
             Object object = wktReader.read(polygonWKT);
             if (!(object instanceof S2Polygon)) {
                 throw new IllegalArgumentException("Given polygonWKT is not a valid polygon.");
             }
-            return polygon((S2Polygon) object);
+            return withPolygon((S2Polygon) object);
         }
-
-        public Constrain.Builder startDate(String start) {
-            this.start = dateAsLong(start);
+        
+        public Constrain.Builder addDateRang(String start, String end) {
+            addDateRang(dateStringAsDate(start), dateStringAsDate(end));
             return this;
         }
 
-        public Constrain.Builder startDate(Date start) {
+        public Constrain.Builder addDateRang(Date start, Date end) {
+            long startMillis = -1;
+            long endMillis = -1;
             if (start != null) {
-                this.start = start.getTime();
+                startMillis = start.getTime();
             }
-            return this;
-        }
-
-        public Builder endDate(String end) {
-            this.end = dateAsLong(end);
-            if (this.end != -1) {
-                // end date is inclusive
-                this.end += DAY_IN_MILLIS;
-            }
-            return this;
-        }
-
-        public Constrain.Builder endDate(Date end) {
             if (end != null) {
-                this.end = end.getTime();
                 // end date is inclusive
-                this.end += DAY_IN_MILLIS;
+                endMillis = end.getTime();
+                endMillis += DAY_IN_MILLIS;
             }
+            dateRanges.add(new DateRange(startMillis, endMillis));
             return this;
         }
 
@@ -155,36 +141,76 @@ public class Constrain {
             return this;
         }
 
-        public Constrain.Builder insitu(List<SimpleRecord> insituRecords) {
-            this.insituRecords = insituRecords.toArray(new SimpleRecord[0]);
+        public Constrain.Builder withInsituRecords(List<SimpleRecord> insituRecords) {
+            this.insituRecords.addAll(insituRecords);
             return this;
         }
 
-        public Constrain.Builder timeDelta(long timeDelta) {
+        public Constrain.Builder withInsituTimeDelta(long timeDelta) {
             this.timeDelta = timeDelta;
             return this;
         }
 
-        public Constrain.Builder maxNumResults(int maxNumResults) {
+        public Constrain.Builder withMaxNumResults(int maxNumResults) {
             this.maxNumResults = maxNumResults;
             return this;
         }
 
         public Constrain build() {
-            return new Constrain(queryName, s2Polygon, start, end, useOnlyProductStart, insituRecords, timeDelta, maxNumResults);
+            if (dateRanges.isEmpty()) {
+                dateRanges.add(new DateRange(-1, -1));
+            }
+            return new Constrain(queryName, 
+                                 s2Polygon, 
+                                 dateRanges, 
+                                 useOnlyProductStart, 
+                                 insituRecords.toArray(new SimpleRecord[0]), 
+                                 timeDelta, 
+                                 maxNumResults);
         }
     }
 
-    private static long dateAsLong(String dateString) {
-        if (dateString != null && !dateString.isEmpty()) {
+    private static Date dateStringAsDate(String dateString) {
+        if (dateString != null && !dateString.isEmpty() && !dateString.equalsIgnoreCase("null")) {
             try {
-                return DATE_FORMAT.parse(dateString).getTime();
+                return DATE_FORMAT.parse(dateString);
             } catch (ParseException e) {
                 e.printStackTrace();
-                return -1;
+                return null;
             }
         } else {
-            return -1;
+            return null;
+        }
+    }
+    
+    private static String longAsDateString(long date) {
+        if (date <= -1L) {
+            return "null";
+        } else {
+            return DATE_FORMAT.format(new Date(date));
+        }
+    }
+    
+    public static class DateRange {
+        private final long start;
+        private final long end;
+
+        public DateRange(long start, long end) {
+            this.start = start;
+            this.end = end;
+        }
+
+        public long getStart() {
+            return start;
+        }
+
+        public long getEnd() {
+            return end;
+        }
+
+        @Override
+        public String toString() {
+            return longAsDateString(start) +", " + longAsDateString(end - DAY_IN_MILLIS);
         }
     }
 }

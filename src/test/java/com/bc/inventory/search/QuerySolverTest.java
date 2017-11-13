@@ -18,18 +18,18 @@ public class QuerySolverTest {
         CsvGeoDb csvGeoDb = loadDbFromResource("/testdata_1.csv");
         List<String> result;
 
-        result = csvGeoDb.query(new Constrain.Builder().startDate("1970-01-02").endDate("1970-01-02").build());
+        result = csvGeoDb.query(new Constrain.Builder().addDateRang("1970-01-02", "1970-01-02").build());
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals("p2", result.get(0));
 
-        result = csvGeoDb.query(new Constrain.Builder().startDate("1970-01-03").endDate("1970-01-03").build());
+        result = csvGeoDb.query(new Constrain.Builder().addDateRang("1970-01-03", "1970-01-03").build());
         assertNotNull(result);
         assertEquals(2, result.size());
         assertEquals("p3a", result.get(0));
         assertEquals("p3b", result.get(1));
 
-        result = csvGeoDb.query(new Constrain.Builder().startDate("1970-01-02").build());
+        result = csvGeoDb.query(new Constrain.Builder().addDateRang("1970-01-02", null).build());
         assertNotNull(result);
         assertEquals(4, result.size());
         assertEquals("p2", result.get(0));
@@ -46,7 +46,7 @@ public class QuerySolverTest {
         assertEquals("p3b", result.get(3));
         assertEquals("p4", result.get(4));
 
-        result = csvGeoDb.query(new Constrain.Builder().startDate("1970-01-05").build());
+        result = csvGeoDb.query(new Constrain.Builder().addDateRang("1970-01-05", "").build());
         assertNotNull(result);
         assertEquals(0, result.size());
     }
@@ -57,14 +57,14 @@ public class QuerySolverTest {
         CsvGeoDb csvGeoDb = loadDbFromResource("/testdata_2.csv");
         List<String> result;
 
-        result = csvGeoDb.query(new Constrain.Builder().startDate("1970-01-02").endDate("1970-01-02").build());
+        result = csvGeoDb.query(new Constrain.Builder().addDateRang("1970-01-02", "1970-01-02").build());
         assertNotNull(result);
         assertEquals(3, result.size());
         assertEquals("p1", result.get(0));
         assertEquals("p2", result.get(1));
         assertEquals("p3", result.get(2));
 
-        result = csvGeoDb.query(new Constrain.Builder().startDate("1970-01-02").build());
+        result = csvGeoDb.query(new Constrain.Builder().addDateRang("1970-01-02", "").build());
         assertNotNull(result);
         assertEquals(3, result.size());
         assertEquals("p1", result.get(0));
@@ -85,18 +85,18 @@ public class QuerySolverTest {
         CsvGeoDb csvGeoDb = loadDbFromResource("/testdata_3.csv");
         List<String> result;
 
-        result = csvGeoDb.query(new Constrain.Builder().startDate("1970-01-03").endDate("1970-01-03").build());
+        result = csvGeoDb.query(new Constrain.Builder().addDateRang("1970-01-03", "1970-01-03").build());
         assertNotNull(result);
         assertEquals(2, result.size());
         assertEquals("p0", result.get(0));
         assertEquals("p3", result.get(1));
 
-        result = csvGeoDb.query(new Constrain.Builder().startDate("1970-01-04").build());
+        result = csvGeoDb.query(new Constrain.Builder().addDateRang("1970-01-04", "").build());
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals("p0", result.get(0));
 
-        result = csvGeoDb.query(new Constrain.Builder().endDate("1970-01-01").build());
+        result = csvGeoDb.query(new Constrain.Builder().addDateRang("", "1970-01-01").build());
         assertNotNull(result);
         System.out.println("result = " + result);
         assertEquals(2, result.size());

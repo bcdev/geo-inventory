@@ -81,22 +81,22 @@ public class Benchmark {
         List<SimpleRecord> latLon = InsituRecords.read(new File(baseDir, "extracts.csv"), SimpleRecord.INSITU_DATE_FORMAT);
 
         List<Constrain.Builder> cbs = new ArrayList<>();
-//        cbs.add(new Constrain.Builder("northsea").polygon(NORTHSEA_WKT));
-//        cbs.add(new Constrain.Builder("northsea2").polygon(NORTHSEA_WKT));
-//        cbs.add(new Constrain.Builder("acadia, 1 year").polygon(ACADIA_WKT).startDate("2005-01-01").endDate("2006-01-01"));
-        cbs.add(new Constrain.Builder("northsea, 1 year").polygon(NORTHSEA_WKT).startDate("2005-01-01").endDate("2006-01-01"));
-//        cbs.add(new Constrain.Builder("northsea, 1 year, #100").polygon(NORTHSEA_WKT).startDate("2005-01-01").endDate("2006-01-01").maxNumResults(100));
-//        cbs.add(new Constrain.Builder("northsea, 1 week").polygon(NORTHSEA_WKT).startDate("2005-06-01").endDate("2005-06-07"));
-//        cbs.add(new Constrain.Builder("victoria, 1 week").polygon(VICTORIA_WKT).startDate("2016-06-01").endDate("2016-06-07"));
-//        cbs.add(new Constrain.Builder("northsea, 1 day").polygon(NORTHSEA_WKT).startDate("2005-06-01").endDate("2005-06-01"));
-//        cbs.add(new Constrain.Builder("matchups 30k lat/lon/time").insitu(latLonTime).timeDelta(HOURS_IN_MILLIS * 3));
-//        cbs.add(new Constrain.Builder("extracts 3 lat/lon").insitu(latLon));
-//        cbs.add(new Constrain.Builder("extracts 3 lat/lon, 100#").insitu(latLon).maxNumResults(100));
-//        cbs.add(new Constrain.Builder("extracts 3 lat/lon, 1 year").insitu(latLon).startDate("2005-01-01").endDate("2006-01-01"));
-//        cbs.add(new Constrain.Builder("1 year").startDate("2005-01-01").endDate("2006-01-01"));
-//        cbs.add(new Constrain.Builder("1 year, 100#").startDate("2005-01-01").endDate("2006-01-01").maxNumResults(100));
-//        cbs.add(new Constrain.Builder("1 day").startDate("2005-06-01").endDate("2005-06-01"));
-//        cbs.add(new Constrain.Builder("1 day (only start)").startDate("2005-06-01").endDate("2005-06-01").useOnlyProductStartDate(true));
+//        cbs.add(new Constrain.Builder("northsea").withPolygon(NORTHSEA_WKT));
+//        cbs.add(new Constrain.Builder("northsea2").withPolygon(NORTHSEA_WKT));
+//        cbs.add(new Constrain.Builder("acadia, 1 year").withPolygon(ACADIA_WKT).addDateRang("2005-01-01", "2006-01-01"));
+        cbs.add(new Constrain.Builder("northsea, 1 year").withPolygon(NORTHSEA_WKT).addDateRang("2005-01-01", "2006-01-01"));
+//        cbs.add(new Constrain.Builder("northsea, 1 year, #100").withPolygon(NORTHSEA_WKT).addDateRang("2005-01-01", "2006-01-01").withMaxNumResults(100));
+//        cbs.add(new Constrain.Builder("northsea, 1 week").withPolygon(NORTHSEA_WKT).addDateRang("2005-06-01", "2005-06-07"));
+//        cbs.add(new Constrain.Builder("victoria, 1 week").withPolygon(VICTORIA_WKT).addDateRang("2016-06-01", "2016-06-07"));
+//        cbs.add(new Constrain.Builder("northsea, 1 day").withPolygon(NORTHSEA_WKT).addDateRang("2005-06-01", "2005-06-01"));
+//        cbs.add(new Constrain.Builder("matchups 30k lat/lon/time").withInsituRecords(latLonTime).withInsituTimeDelta(HOURS_IN_MILLIS * 3));
+//        cbs.add(new Constrain.Builder("extracts 3 lat/lon").withInsituRecords(latLon));
+//        cbs.add(new Constrain.Builder("extracts 3 lat/lon, 100#").withInsituRecords(latLon).withMaxNumResults(100));
+//        cbs.add(new Constrain.Builder("extracts 3 lat/lon, 1 year").withInsituRecords(latLon).addDateRang("2005-01-01", "2006-01-01"));
+//        cbs.add(new Constrain.Builder("1 year").addDateRang("2005-01-01", "2006-01-01"));
+//        cbs.add(new Constrain.Builder("1 year, 100#").addDateRang("2005-01-01", "2006-01-01").withMaxNumResults(100));
+//        cbs.add(new Constrain.Builder("1 day").addDateRang("2005-06-01", "2005-06-01"));
+//        cbs.add(new Constrain.Builder("1 day (only start)").addDateRang("2005-06-01", "2005-06-01").useOnlyProductStartDate(true));
 
         List<Constrain> constrains = new ArrayList<>();
         for (Constrain.Builder cb : cbs) {

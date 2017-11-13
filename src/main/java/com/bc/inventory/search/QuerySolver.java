@@ -9,8 +9,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Evaluates the given Constrain against an Inventory to get to a QueryResult.
@@ -25,39 +27,59 @@ public class QuerySolver {
     
     public List<String> query(Constrain constrain) {
         SimpleRecord[] insituRecords = constrain.getInsituRecords();
-        int start = TimeUtils.startTimeInMin(constrain.getStartTime());   // can be -1
-        int end = TimeUtils.endTimeInMin(constrain.getEndTime());         // can be -1
+//        int start = TimeUtils.startTimeInMin(constrain.getStartTime());   // can be -1
+//        int end = TimeUtils.endTimeInMin(constrain.getEndTime());         // can be -1
         int maxNumResults = constrain.getMaxNumResults();
 
         if (insituRecords.length == 0) {
             S2Polygon polygon = constrain.getPolygon();
             boolean useOnlyProductStart = constrain.useOnlyProductStart();
-            List<Integer> productIDs = testOnIndex(start, end, useOnlyProductStart, null, polygon);
+            List<Constrain.DateRange> dateRanges = constrain.getDateRanges();
+            List<Integer> productIDs = null;
+            Set<Integer> uniqueProductIds = new HashSet<>();
+            for (Constrain.DateRange dateRange : dateRanges) {
+                int start = TimeUtils.startTimeInMin(dateRange.getStart());   // can be -1
+                int end = TimeUtils.endTimeInMin(dateRange.getEnd());         // can be -1
+                List<Integer> someProductIDs = testOnIndex(start, end, useOnlyProductStart, null, polygon);
+                if (dateRanges.size() > 1) {
+                    uniqueProductIds.addAll(someProductIDs);
+                } else {
+                    productIDs = someProductIDs;
+                }
+            }
+            if (dateRanges.size() > 1) {
+                productIDs = new ArrayList<>(uniqueProductIds);
+            }
             return testPolygonOnData(productIDs, polygon, maxNumResults);
         } else {
             Map<Integer, List<S2Point>> candidatesMap = new HashMap<>();
-            for (SimpleRecord insituRecord : insituRecords) {
-                long delta = constrain.getTimeDelta();
-                boolean useOnlyProductStart = constrain.useOnlyProductStart();
-                long insituRecordTime = insituRecord.getTime();
-                int insituStart = start;
-                int insituEnd = end;
-                if (delta != -1 && insituRecordTime != -1) {
-                    insituStart = TimeUtils.startTimeInMin(insituRecordTime - delta);
-                    insituEnd = TimeUtils.endTimeInMin(insituRecordTime + delta);
-                    if (end != -1 && end < insituStart) {
-                        continue;
+            for (Constrain.DateRange dateRange : constrain.getDateRanges()) {
+                int start = TimeUtils.startTimeInMin(dateRange.getStart());   // can be -1
+                int end = TimeUtils.endTimeInMin(dateRange.getEnd());         // can be -1
+
+                for (SimpleRecord insituRecord : insituRecords) {
+                    long delta = constrain.getTimeDelta();
+                    boolean useOnlyProductStart = constrain.useOnlyProductStart();
+                    long insituRecordTime = insituRecord.getTime();
+                    int insituStart = start;
+                    int insituEnd = end;
+                    if (delta != -1 && insituRecordTime != -1) {
+                        insituStart = TimeUtils.startTimeInMin(insituRecordTime - delta);
+                        insituEnd = TimeUtils.endTimeInMin(insituRecordTime + delta);
+                        if (end != -1 && end < insituStart) {
+                            continue;
+                        }
+                        if (start != -1 && start > insituEnd) {
+                            continue;
+                        }
+                        useOnlyProductStart = false; // for time-matchups always precise time checks
                     }
-                    if (start != -1 && start > insituEnd) {
-                        continue;
-                    }
-                    useOnlyProductStart = false; // for time-matchups always precise time checks
-                }
-                S2Point s2Point = insituRecord.getAsPoint();
-                List<Integer> productIDs = testOnIndex(insituStart, insituEnd, useOnlyProductStart, s2Point, null);
-                if (!productIDs.isEmpty()) {
-                    for (Integer match : productIDs) {
-                        candidatesMap.computeIfAbsent(match, k -> new ArrayList<>()).add(s2Point);
+                    S2Point s2Point = insituRecord.getAsPoint();
+                    List<Integer> productIDs = testOnIndex(insituStart, insituEnd, useOnlyProductStart, s2Point, null);
+                    if (!productIDs.isEmpty()) {
+                        for (Integer match : productIDs) {
+                            candidatesMap.computeIfAbsent(match, k -> new ArrayList<>()).add(s2Point);
+                        }
                     }
                 }
             }

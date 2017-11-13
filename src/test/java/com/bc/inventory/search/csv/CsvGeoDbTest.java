@@ -29,8 +29,8 @@ public class CsvGeoDbTest {
         InputStream is = this.getClass().getResourceAsStream("/meris20050101_products_list.csv");
         iis = new MemoryCacheImageInputStream(is);
         csvGeoDb = new CsvGeoDb();
-        northsea = new Constrain.Builder("northsea").polygon(NORTHSEA_WKT).build();
-        later = new Constrain.Builder("later").startDate("2005-05-05").build();
+        northsea = new Constrain.Builder("northsea").withPolygon(NORTHSEA_WKT).build();
+        later = new Constrain.Builder("later").addDateRang("2005-05-05", null).build();
     }
 
     @Test

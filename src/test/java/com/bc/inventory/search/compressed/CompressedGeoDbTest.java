@@ -66,7 +66,7 @@ public class CompressedGeoDbTest {
         ArrayList<GeoDbEntry> entryList2 = Lists.newArrayList(compressedGeoDb2.entries());
         assertEquals(2, entryList2.size());
 
-        Constrain constrain = new Constrain.Builder("q").startDate("2005-01-06").build();
+        Constrain constrain = new Constrain.Builder("q").addDateRang("2005-01-06", null).build();
         List<String> result = compressedGeoDb2.query(constrain);
         assertEquals(1, result.size());
 
