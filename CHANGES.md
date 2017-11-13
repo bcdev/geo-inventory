@@ -1,3 +1,7 @@
+# 0.6.0 (13.11.2017)
+ * constrain can have multiple date ranges
+ * change constrain builder API
+ * support reading from an (not seekable) InputStream
 # 0.5.2 (24.10.2017)
  * products without a time are return as a result for all constraints 
  * in DB dumps write a not exiting date as "null"
