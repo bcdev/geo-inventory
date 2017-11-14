@@ -24,5 +24,5 @@ public interface GeoDb {
     
     GeoDbUpdater getDbUpdater();
 
-    List<String> query(Constrain constrain);
+    List<String> query(Constrain constrain) throws IOException;
 }

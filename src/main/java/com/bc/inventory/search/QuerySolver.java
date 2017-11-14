@@ -25,7 +25,7 @@ public class QuerySolver {
         this.index = index;
     }
     
-    public List<String> query(Constrain constrain) {
+    public List<String> query(Constrain constrain) throws IOException {
         SimpleRecord[] insituRecords = constrain.getInsituRecords();
 //        int start = TimeUtils.startTimeInMin(constrain.getStartTime());   // can be -1
 //        int end = TimeUtils.endTimeInMin(constrain.getEndTime());         // can be -1
@@ -132,57 +132,47 @@ public class QuerySolver {
         }
     }
 
-    private List<String> testPolygonOnData( List<Integer> uniqueProductList, S2Polygon searchPolygon, int numResults) {
+    private List<String> testPolygonOnData( List<Integer> uniqueProductList, S2Polygon searchPolygon, int numResults) throws IOException {
             
         uniqueProductList.sort(Comparator.comparingInt(index::getStartTime));
         List<String> matches = new ArrayList<>();
-        try {
-            for (Integer productID : uniqueProductList) {
-                index.readEntry(productID);
-                if (searchPolygon == null || index.getCurrentPolygon().intersects(searchPolygon)) {
-                    matches.add(index.getCurrentPath());
-                    if (matches.size() == numResults) {
-                        return matches;
-                    }
+        for (Integer productID : uniqueProductList) {
+            index.readEntry(productID);
+            if (searchPolygon == null || index.getCurrentPolygon().intersects(searchPolygon)) {
+                matches.add(index.getCurrentPath());
+                if (matches.size() == numResults) {
+                    return matches;
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         return matches;
     }
 
-    private List<String> testPointsOnData(Map<Integer, List<S2Point >> candidatesMap, int maxNumResults) {
+    private List<String> testPointsOnData(Map<Integer, List<S2Point >> candidatesMap, int maxNumResults) throws IOException {
 
         List<Integer> uniqueProductList = new ArrayList<>(candidatesMap.keySet());
         uniqueProductList.sort(Comparator.comparingInt(index::getStartTime));
 
         List<String> matches = new ArrayList<>();
-        try {
-            for (Integer productID : uniqueProductList) {
-                index.readEntry(productID);
+        for (Integer productID : uniqueProductList) {
+            index.readEntry(productID);
 
-                S2Polygon polygon = index.getCurrentPolygon();
-                List<S2Point> s2Points = candidatesMap.get(productID);
-                boolean pointInPolygon = false;
-                for (S2Point s2Point : s2Points) {
-                    if (polygon.contains(s2Point)) {
-                        pointInPolygon = true;
-                        break;
-                    }
-                }
-                if (pointInPolygon) {
-                    matches.add(index.getCurrentPath());
-                    if (matches.size() == maxNumResults) {
-                        return matches;
-                    }
+            S2Polygon polygon = index.getCurrentPolygon();
+            List<S2Point> s2Points = candidatesMap.get(productID);
+            boolean pointInPolygon = false;
+            for (S2Point s2Point : s2Points) {
+                if (polygon.contains(s2Point)) {
+                    pointInPolygon = true;
+                    break;
                 }
             }
-            return matches;
-        } catch (IOException e) {
-            e.printStackTrace();
+            if (pointInPolygon) {
+                matches.add(index.getCurrentPath());
+                if (matches.size() == maxNumResults) {
+                    return matches;
+                }
+            }
         }
         return matches;
     }
-    
 }

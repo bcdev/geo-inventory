@@ -111,7 +111,7 @@ public class CompressedGeoDb implements GeoDb {
     }
 
     @Override
-    public List<String> query(Constrain constrain) {
+    public List<String> query(Constrain constrain) throws IOException {
         if (querySolver == null) {
             throw new IllegalStateException("CompressedGeoDb not opened for querying");
         }

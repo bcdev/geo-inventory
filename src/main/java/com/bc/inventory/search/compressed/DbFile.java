@@ -377,12 +377,13 @@ class DbFile {
         }
         
         @Override
-        protected void seek(int pos) throws IOException {
-            if (pos >= currentPos) {
+        protected void seek(final int pos) throws IOException {
+            if (pos < currentPos) {
+                throw new IOException("Backwards seeking not supported when using InputStream based implementation.");
+            }
+            while (pos > currentPos){
                 long skipped = is.skip(pos - currentPos);
                 currentPos += skipped;
-            } else {
-                throw new IOException("Backwards seeking not supported when using InputStream based implementation.");
             }
         }
 

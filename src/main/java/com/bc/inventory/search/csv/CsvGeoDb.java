@@ -75,7 +75,7 @@ public class CsvGeoDb implements GeoDb {
     }
 
     @Override
-    public List<String> query(Constrain constrain) {
+    public List<String> query(Constrain constrain) throws IOException {
         return querySolver.query(constrain);
     }
 
