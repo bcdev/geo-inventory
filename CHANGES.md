@@ -1,3 +1,5 @@
+# 0.6.1 (27.11.2017)
+ * sort by ID instead of start-time before testing on polygons
 # 0.6.0 (13.11.2017)
  * constrain can have multiple date ranges
  * change constrain builder API

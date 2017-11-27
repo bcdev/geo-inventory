@@ -6,13 +6,7 @@ import com.google.common.geometry.S2Point;
 import com.google.common.geometry.S2Polygon;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Evaluates the given Constrain against an Inventory to get to a QueryResult.
@@ -27,8 +21,6 @@ public class QuerySolver {
     
     public List<String> query(Constrain constrain) throws IOException {
         SimpleRecord[] insituRecords = constrain.getInsituRecords();
-//        int start = TimeUtils.startTimeInMin(constrain.getStartTime());   // can be -1
-//        int end = TimeUtils.endTimeInMin(constrain.getEndTime());         // can be -1
         int maxNumResults = constrain.getMaxNumResults();
 
         if (insituRecords.length == 0) {
@@ -133,10 +125,11 @@ public class QuerySolver {
     }
 
     private List<String> testPolygonOnData( List<Integer> uniqueProductList, S2Polygon searchPolygon, int numResults) throws IOException {
-            
-        uniqueProductList.sort(Comparator.comparingInt(index::getStartTime));
+        Integer[] uniqueProductIDs = uniqueProductList.toArray(new Integer[0]);
+        Arrays.sort(uniqueProductIDs, Integer::compare);
+
         List<String> matches = new ArrayList<>();
-        for (Integer productID : uniqueProductList) {
+        for (Integer productID : uniqueProductIDs) {
             index.readEntry(productID);
             if (searchPolygon == null || index.getCurrentPolygon().intersects(searchPolygon)) {
                 matches.add(index.getCurrentPath());
@@ -149,12 +142,11 @@ public class QuerySolver {
     }
 
     private List<String> testPointsOnData(Map<Integer, List<S2Point >> candidatesMap, int maxNumResults) throws IOException {
-
-        List<Integer> uniqueProductList = new ArrayList<>(candidatesMap.keySet());
-        uniqueProductList.sort(Comparator.comparingInt(index::getStartTime));
+        Integer[] uniqueProductIDs = candidatesMap.keySet().toArray(new Integer[0]);
+        Arrays.sort(uniqueProductIDs, Integer::compareTo);
 
         List<String> matches = new ArrayList<>();
-        for (Integer productID : uniqueProductList) {
+        for (Integer productID : uniqueProductIDs) {
             index.readEntry(productID);
 
             S2Polygon polygon = index.getCurrentPolygon();
