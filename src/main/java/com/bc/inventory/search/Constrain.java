@@ -20,6 +20,7 @@ import java.util.List;
 public class Constrain {
 
     private static final DateFormat DATE_FORMAT = TimeUtils.createDateFormat("yyyy-MM-dd");
+    private static final DateFormat DATETIME_FORMAT = TimeUtils.createDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     private static final long DAY_IN_MILLIS = 24 * 60 * 60 * 1000L;
 
     private final String queryName;
@@ -173,10 +174,14 @@ public class Constrain {
     private static Date dateStringAsDate(String dateString) {
         if (dateString != null && !dateString.isEmpty() && !dateString.equalsIgnoreCase("null")) {
             try {
-                return DATE_FORMAT.parse(dateString);
-            } catch (ParseException e) {
-                e.printStackTrace();
-                return null;
+                return DATETIME_FORMAT.parse(dateString);
+            } catch (ParseException e1) {
+                try {
+                    return DATE_FORMAT.parse(dateString);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                    return null;
+                }
             }
         } else {
             return null;

@@ -52,7 +52,8 @@ public class SafeUpdateInventory implements Inventory {
         this.useIndex = useIndex;
         this.verbose = true;
         this.failOnMissingDB = false;
-        this.updatePrefix = "CSV";
+        //this.updatePrefix = "CSV";
+        this.updatePrefix = "scan.";
         this.atticPrefix = "scan.";
         this.atticSuffix = ".csv";
     }
@@ -151,9 +152,7 @@ public class SafeUpdateInventory implements Inventory {
             throw new NullPointerException("constrain");
         }
         long t1 = System.currentTimeMillis();
-        if (verbose) {
-            printVerbose("query: constrain " + constrain);
-        }
+        printVerbose("query: constrain " + constrain);
         List<GeoDb> dbList = new ArrayList<>();
         openCompressedDB().ifPresent(dbList::add);
         Collections.addAll(dbList, openUpdateDBs());
@@ -218,6 +217,8 @@ public class SafeUpdateInventory implements Inventory {
     }
 
     private Optional<GeoDb> openCompressedDB(String[] indexFiles) throws IOException {
+        printVerbose(indexFilenameA);
+        printVerbose(indexFilenameB);
         printVerbose("openCompressedDB from: " + Arrays.toString(indexFiles));
         if (indexFiles.length > 0) {
             // read the newest DB

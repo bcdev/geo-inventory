@@ -4,6 +4,7 @@ import com.bc.inventory.insitu.InsituRecords;
 import com.bc.inventory.search.Constrain;
 import com.bc.inventory.search.Inventory;
 import com.bc.inventory.search.FileStreamFactory;
+import com.bc.inventory.search.SafeUpdateInventory;
 import com.bc.inventory.search.SimpleInventory;
 import com.bc.inventory.search.StreamFactory;
 import com.bc.inventory.utils.SimpleRecord;
@@ -54,7 +55,10 @@ public class CLI {
     }
     
     private static Inventory createInventory(StreamFactory streamFactory, String dbDIR) {
-        return new SimpleInventory(streamFactory, new File(dbDIR, "geo_index").getPath());
+        //return new SimpleInventory(streamFactory, new File(dbDIR, "geo_index").getPath());
+        final SafeUpdateInventory inventory = new SafeUpdateInventory(streamFactory, dbDIR);
+        inventory.setVerbose(false);
+        return inventory;
     }
 
     private static void dump(Inventory inventory, String csvPath) throws IOException {
@@ -67,11 +71,11 @@ public class CLI {
 
     private static void query(Inventory inventory, String[] args) throws IOException {
         Constrain constraints = parseConstraint(args);
-        long t1 = System.currentTimeMillis();
+        //long t1 = System.currentTimeMillis();
         List<String> pathList = inventory.query(constraints);
-        long t2 = System.currentTimeMillis();
-        System.err.printf("Time needed: %dms%n", (t2 - t1));
-        System.err.printf("Num results: %d%n", pathList.size());
+        //long t2 = System.currentTimeMillis();
+        //System.err.printf("Time needed: %dms%n", (t2 - t1));
+        //System.err.printf("Num results: %d%n", pathList.size());
         for (String path : pathList) {
             System.err.println(path);
         }
